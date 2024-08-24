@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Mate - E-learning at your home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366F1',
+                        'secondary': '#F3F4F6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F3F4F6;
+        }
+        .custom-shape {
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+        }
+        #chatbot {
+            width: 350px;
+            height: 500px;
+        }
+        #chatMessages {
+            height: 350px;
+        }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <nav class="bg-primary p-4 sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <span class="text-white font-bold text-xl">CLASS MATE</span>
+            <div class="hidden md:flex space-x-6">
+                <a href="#home" class="text-white hover:text-indigo-200">Home</a>
+                <a href="#about" class="text-white hover:text-indigo-200">About</a>
+                <a href="#features" class="text-white hover:text-indigo-200">Features</a>
+                <a href="#courses" class="text-white hover:text-indigo-200">Courses</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow">
+        <section id="home" class="py-20">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="md:w-1/2 mb-8 md:mb-0">
+                        <h1 class="text-4xl md:text-6xl font-bold mb-4">
+                            Lets <span class="text-primary">E-learning</span><br>
+                            at your home
+                        </h1>
+                        <p class="text-gray-600 mb-6">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                            sed do eiusmod tempor incididunt ut labore et dolore
+                            magna aliqua. Ut enim ad minim veniam.
+                        </p>
+                        <button id="getStartedBtn" class="bg-primary text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition duration-300">
+                            GET STARTED
+                        </button>
+                    </div>
+                    <div class="md:w-1/2">
+                        <div class="custom-shape overflow-hidden w-full h-96 relative">
+                            <img src="/images/main.png" alt="Student learning" class="absolute inset-0 w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="py-20 bg-white">
+            <div class="container mx-auto px-4">
+                <h2 class="text-4xl font-bold text-center text-gray-800 mb-8">About Class Mate</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-6">
+                        <p class="text-lg text-gray-600 leading-relaxed">
+                            Class Mate is a cutting-edge e-learning platform designed to revolutionize the way students and teachers interact in the digital age. Our mission is to make high-quality education accessible to everyone, anywhere, at any time.
+                        </p>
+                        <p class="text-lg text-gray-600 leading-relaxed">
+                            With a team of dedicated educators and tech experts, we've created a user-friendly platform that caters to various learning styles and educational needs. Whether you're a student looking to excel in your studies or a teacher aiming to reach a global audience, Class Mate provides the tools and resources you need to succeed.
+                        </p>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-start space-y-4 sm:space-y-0 sm:space-x-6 mt-8">
+                            <div class="flex items-center">
+                                <svg class="w-8 h-8 text-primary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                                <span class="text-xl font-semibold text-gray-700">1000+ Courses</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-8 h-8 text-primary mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                                <span class="text-xl font-semibold text-gray-700">50,000+ Students</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <img src="/images/about.png" alt="Students learning online" class="rounded-lg shadow-xl">
+                        <div class="absolute -bottom-6 -right-6 bg-primary text-white text-xl font-bold py-4 px-6 rounded-lg shadow-lg">
+                            Join Us Today!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="features" class="py-20 bg-gray-100">
+            <div class="container mx-auto px-4">
+                <h2 class="text-4xl font-bold text-center text-gray-800 mb-12">Empowering Your Learning Journey</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Procrastination Feature -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <div class="text-primary mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Beat Procrastination</h3>
+                        <p class="text-gray-600">Our innovative tools and techniques help you overcome procrastination and stay on track with your studies.</p>
+                    </div>
+                    
+                    <!-- Easy Online Tests Feature -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <div class="text-primary mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Easy Online Tests & Exams</h3>
+                        <p class="text-gray-600">Experience hassle-free online assessments with our user-friendly platform, designed to make testing a breeze.</p>
+                    </div>
+                    
+                    <!-- Analytics-Based Feedback Feature -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <div class="text-primary mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Analytics-Based Feedback</h3>
+                        <p class="text-gray-600">Get personalized insights and recommendations based on your performance, helping you focus on areas that need improvement.</p>
+                    </div>
+                </div>
+                <div class="mt-12 text-center">
+                    <a href="#" class="bg-primary text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                        Start Learning Now
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center">
+                <span>&copy; 2024 Class Mate. All rights reserved.</span>
+                <div class="space-x-4">
+                    <a href="#" class="hover:text-primary"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="hover:text-primary"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="hover:text-primary"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="hover:text-primary"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <button id="chatToggle" class="fixed bottom-4 right-4 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition duration-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+    </button>
+
+    <div id="chatbot" class="fixed bottom-20 right-4 bg-white rounded-lg shadow-xl hidden flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="font-bold text-primary">Chatbot</h3>
+            <button id="closeChat" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="chatMessages" class="flex-grow overflow-y-auto p-4 bg-gray-100">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="p-4 border-t flex">
+            <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow px-3 py-2 border rounded-l-full focus:outline-none focus:ring-2 focus:ring-primary">
+            <button id="sendMessage" class="bg-primary text-white px-4 py-2 rounded-r-full hover:bg-indigo-700 transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Role Selection Modal -->
+<div id="roleModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center">
+    <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+    
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-2xl z-50 overflow-y-auto transform transition-all duration-300 scale-95 opacity-0">
+        <div class="modal-content py-6 text-left px-6">
+            <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                <p class="text-3xl font-bold text-primary">Select Your Role</p>
+                <div id="closeModal" class="modal-close cursor-pointer z-50 transition duration-300 ease-in-out transform hover:scale-110">
+                    <svg class="fill-current text-gray-500 hover:text-gray-800" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="mt-8 flex flex-col space-y-6">
+                <div class="space-y-4">
+                    <p class="text-xl font-semibold text-center">Student</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="studentSignIn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
+                            Sign In
+                        </button>
+                        <button id="studentSignUp" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
+                            Sign Up
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <p class="text-xl font-semibold text-center">Teacher</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="teacherSignIn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
+                            Sign In
+                        </button>
+                        <button id="teacherSignUp" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg">
+                            Sign Up
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = {
+                chatToggle: document.getElementById('chatToggle'),
+                chatbot: document.getElementById('chatbot'),
+                closeChat: document.getElementById('closeChat'),
+                chatMessages: document.getElementById('chatMessages'),
+                messageInput: document.getElementById('messageInput'),
+                sendMessage: document.getElementById('sendMessage'),
+                modal: document.querySelector('#roleModal'),
+                modalContainer: document.querySelector('.modal-container'),
+                body: document.body,
+                getStartedBtn: document.querySelector('#getStartedBtn'),
+                closeModalButton: document.querySelector('#closeModal'),
+                studentSignIn: document.querySelector('#studentSignIn'),
+                studentSignUp: document.querySelector('#studentSignUp'),
+                teacherSignIn: document.querySelector('#teacherSignIn'),
+                teacherSignUp: document.querySelector('#teacherSignUp')
+            };
+
+            function openModal() {
+                elements.modal.classList.remove('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    elements.modalContainer.classList.remove('scale-95', 'opacity-0');
+                    elements.modalContainer.classList.add('scale-100', 'opacity-100');
+                }, 50);
+            }
+        
+            function closeModalFunc() {
+                elements.modalContainer.classList.remove('scale-100', 'opacity-100');
+                elements.modalContainer.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.modal.classList.add('opacity-0', 'pointer-events-none');
+                }, 300);
+            }
+                
+            function addMessage(message, isUser = true) {
+                if (!elements.chatMessages) return;
+                const messageElement = document.createElement('div');
+                messageElement.classList.add(
+                    'mb-2', 'p-2', 'rounded',
+                    isUser ? 'bg-primary' : 'bg-gray-300',
+                    isUser ? 'text-white' : 'text-gray-800',
+                    isUser ? 'ml-auto' : 'mr-auto', 'max-w-3/4'
+                );
+                messageElement.textContent = message;
+                elements.chatMessages.appendChild(messageElement);
+                elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+            }
+        
+            function toggleModal() {
+                elements.modal.classList.toggle('opacity-0');
+                elements.modal.classList.toggle('pointer-events-none');
+                elements.body.classList.toggle('modal-active');
+            }
+        
+            // Open and close modal with animation
+            function openModal() {
+                elements.modal.classList.remove('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    elements.modalContainer.classList.remove('scale-95', 'opacity-0');
+                    elements.modalContainer.classList.add('scale-100', 'opacity-100');
+                }, 50);
+            }
+        
+            function closeModalFunc() {
+                elements.modalContainer.classList.remove('scale-100', 'opacity-100');
+                elements.modalContainer.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.modal.classList.add('opacity-0', 'pointer-events-none');
+                }, 300);
+            }
+        
+            // Chatbot functionality
+            elements.chatToggle?.addEventListener('click', () => {
+                elements.chatbot.classList.toggle('hidden');
+            });
+        
+            elements.closeChat?.addEventListener('click', () => {
+                elements.chatbot.classList.add('hidden');
+            });
+        
+            elements.sendMessage?.addEventListener('click', () => {
+                const message = elements.messageInput.value.trim();
+                if (message) {
+                    addMessage(message);
+                    elements.messageInput.value = '';
+                    setTimeout(() => {
+                        addMessage("Thank you for your message. How can I assist you today?", false);
+                    }, 1000);
+                }
+            });
+        
+            elements.messageInput?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    elements.sendMessage.click();
+                }
+            });
+        
+             // Modal functionality
+            elements.getStartedBtn?.addEventListener('click', openModal);
+            elements.closeModalButton?.addEventListener('click', closeModalFunc);
+
+            elements.studentSignIn?.addEventListener('click', () => {
+                window.location.href = 'stu_signin.php';
+            });
+
+            elements.studentSignUp?.addEventListener('click', () => {
+                window.location.href = 'stu_signup.php';
+            });
+
+            elements.teacherSignIn?.addEventListener('click', () => {
+                window.location.href = 'tea_signin.php';
+            });
+
+            elements.teacherSignUp?.addEventListener('click', () => {
+                window.location.href = 'tea_signup.php';
+            });
+
+            // Close modal if clicked outside of it
+            window.addEventListener('click', (e) => {
+                if (e.target === elements.modal) {
+                    closeModalFunc();
+                }
+            });
+        
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });        
+    </script>
+

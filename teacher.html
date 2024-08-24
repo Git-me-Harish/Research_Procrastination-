@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Container Styles */
+        .container {
+            text-align: center;
+            padding: 40px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        /* Logo Styles */
+        .home-logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            background-color: white;
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .home-logo:hover {
+            transform: scale(1.1);
+        }
+
+        .home-logo svg {
+            width: 30px;
+            height: 30px;
+            fill: #6366f1;
+        }
+
+        /* Heading Styles */
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Button Styles */
+        .btn-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 25px;
+            background-color: #6366f1;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn i {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            .btn {
+                width: 100%;
+            }
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+    </a>
+    <div class="container">
+        <h1>Teacher Dashboard</h1>
+        <div class="btn-container">
+            <a href="teacher.php" class="btn">
+                <i class="fas fa-plus-circle"></i>Create
+            </a>
+            <a href="view.php" class="btn">
+                <i class="fas fa-eye"></i>View
+            </a>
+            <a href="leader.php" class="btn">
+                <i class="fas fa-trophy"></i>Leaderboard
+            </a>
+            <a href="analysis3.php" class="btn">
+                <i class="fas fa-chart-bar"></i>Feedback Analysis
+            </a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments</title>
+    <style>
+        /* Global styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        /* Button styles */
+        .button {
+            padding: 15px 40px;
+            background-color: #4C8BF5; /* Blue */
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 10px; /* Space around buttons */
+        }
+
+        .button:hover {
+            background-color: #3A6AC1; /* Darker blue on hover */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Elevated shadow */
+        }
+
+        /* Home button styles */
+        .home-logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: block;
+            width: 50px; /* Adjusted width for better visibility */
+            height: auto;
+            transition: transform 0.2s ease;
+        }
+
+        .home-logo:hover {
+            transform: scale(1.1); /* Slightly enlarge on hover */
+        }
+    </style>
+</head>
+<body>
+
+<a href="index.html" class="home-logo">
+    <img src="#" alt="Home">
+</a>
+
+<a href="student.php" class="button">Assignments</a>
+<a href="marks.php" class="button">Score</a>
+
+</body>
+</html>
