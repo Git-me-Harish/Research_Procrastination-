@@ -1,3 +1,5 @@
+<!--BACKUP LANDING PAGE CODE WITHOUT SCROLL ANIMATION-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +8,6 @@
     <title>Class Mate - E-learning at your home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -43,42 +43,18 @@
             overflow-x: hidden;
             overflow-y: visible !important;
         }
-        .mobile-menu {
-            display: none;
-        }
-        @media (max-width: 768px) {
-            .desktop-menu {
-                display: none;
-            }
-            .mobile-menu {
-                display: block;
-            }
-        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
     <nav class="bg-primary p-4 sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
             <span class="text-white font-bold text-xl">CLASS MATE</span>
-            <div class="desktop-menu hidden md:flex space-x-6">
+            <div class="hidden md:flex space-x-6">
                 <a href="#home" class="text-white hover:text-indigo-200">Home</a>
                 <a href="#about" class="text-white hover:text-indigo-200">About</a>
                 <a href="#features" class="text-white hover:text-indigo-200">Features</a>
                 <a href="#courses" class="text-white hover:text-indigo-200">Courses</a>
             </div>
-            <div class="mobile-menu md:hidden">
-                <button id="mobile-menu-button" class="text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <div id="mobile-menu" class="hidden md:hidden">
-            <a href="#home" class="block text-white py-2 px-4 hover:bg-indigo-700">Home</a>
-            <a href="#about" class="block text-white py-2 px-4 hover:bg-indigo-700">About</a>
-            <a href="#features" class="block text-white py-2 px-4 hover:bg-indigo-700">Features</a>
-            <a href="#courses" class="block text-white py-2 px-4 hover:bg-indigo-700">Courses</a>
         </div>
     </nav>
 
@@ -86,7 +62,7 @@
         <section id="home" class="py-20">
             <div class="container mx-auto px-4">
                 <div class="flex flex-col md:flex-row items-center justify-between">
-                    <div class="md:w-1/2 mb-8 md:mb-0" data-aos="fade-right">
+                    <div class="md:w-1/2 mb-8 md:mb-0">
                         <h1 class="text-4xl md:text-6xl font-bold mb-4">
                             Lets <span class="text-primary">E-learning</span><br>
                             at your home
@@ -100,7 +76,7 @@
                             GET STARTED
                         </button>
                     </div>
-                    <div class="md:w-1/2" data-aos="fade-left">
+                    <div class="md:w-1/2">
                         <div class="custom-shape overflow-hidden w-full h-96 relative">
                             <img src="/images/main.png" alt="Student learning" class="absolute inset-0 w-full h-full object-cover">
                         </div>
@@ -111,9 +87,9 @@
 
         <section id="about" class="py-20 bg-white">
             <div class="container mx-auto px-4">
-                <h2 class="text-4xl font-bold text-center text-gray-800 mb-8" data-aos="fade-up">About Class Mate</h2>
+                <h2 class="text-4xl font-bold text-center text-gray-800 mb-8">About Class Mate</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                    <div class="space-y-6" data-aos="fade-right">
+                    <div class="space-y-6">
                         <p class="text-lg text-gray-600 leading-relaxed">
                             Class Mate is a cutting-edge e-learning platform designed to revolutionize the way students and teachers interact in the digital age. Our mission is to make high-quality education accessible to everyone, anywhere, at any time.
                         </p>
@@ -135,7 +111,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="relative" data-aos="fade-left">
+                    <div class="relative">
                         <img src="/images/about.png" alt="Students learning online" class="rounded-lg shadow-xl">
                         <div class="absolute -bottom-6 -right-6 bg-primary text-white text-xl font-bold py-4 px-6 rounded-lg shadow-lg">
                             Join Us Today!
@@ -144,12 +120,12 @@
                 </div>
             </div>
         </section>
-
         <section id="features" class="py-20 bg-gray-100">
             <div class="container mx-auto px-4">
-                <h2 class="text-4xl font-bold text-center text-gray-800 mb-12" data-aos="fade-up">Empowering Your Learning Journey</h2>
+                <h2 class="text-4xl font-bold text-center text-gray-800 mb-12">Empowering Your Learning Journey</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-up" data-aos-delay="100">
+                    <!-- Procrastination Feature -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
                         <div class="text-primary mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -159,7 +135,8 @@
                         <p class="text-gray-600">Our innovative tools and techniques help you overcome procrastination and stay on track with your studies.</p>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-up" data-aos-delay="200">
+                    <!-- Easy Online Tests Feature -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
                         <div class="text-primary mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -169,7 +146,8 @@
                         <p class="text-gray-600">Experience hassle-free online assessments with our user-friendly platform, designed to make testing a breeze.</p>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-lg shadow-lg" data-aos="fade-up" data-aos-delay="300">
+                    <!-- Analytics-Based Feedback Feature -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
                         <div class="text-primary mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -188,90 +166,93 @@
         </section>
         <section id="courses" class="py-20 bg-white">
             <div class="container mx-auto px-4">
-                <h2 class="text-4xl font-bold text-center text-gray-800 mb-12" data-aos="fade-up">Engaging Courses for Every Learner</h2>
+                <h2 class="text-4xl font-bold text-center text-gray-800 mb-12">Engaging Courses for Every Learner</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-gray-100 p-6 rounded-lg shadow-lg" data-aos="fade-up" data-aos-delay="100">
+                    <!-- Interactive Course Format -->
+                    <div class="bg-gray-100 p-6 rounded-lg shadow-lg">
                         <div class="text-primary mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Interactive Learning Modules</h3>
+                        <p class="text-gray-600">Engage with dynamic content that keeps you focused and interested throughout your learning journey.</p>
+                    </div>
+                    
+                    <!-- Micro-Learning Approach -->
+                    <div class="bg-gray-100 p-6 rounded-lg shadow-lg">
+                        <div class="text-primary mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Bite-Sized Learning</h3>
+                        <p class="text-gray-600">Short, focused lessons designed to maximize attention span and minimize procrastination.</p>
+                    </div>
+                    
+                    <!-- Adaptive Learning Paths -->
+                    <div class="bg-gray-100 p-6 rounded-lg shadow-lg">
+                        <div class="text-primary mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Personalized Learning Paths</h3>
+                        <p class="text-gray-600">Courses adapt to your learning style and pace, ensuring an engaging and effective educational experience.</p>
+                    </div>
+                </div>
+                <div class="mt-12 text-center">
+                    <a href="#" class="bg-primary text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                        Explore Our Courses
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center">
+                <span>&copy; 2024 Class Mate. All rights reserved.</span>
+                <div class="space-x-4">
+                    <a href="#" class="hover:text-primary"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="hover:text-primary"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="hover:text-primary"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="hover:text-primary"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <button id="chatToggle" class="fixed bottom-4 right-4 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition duration-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+    </button>
+
+    <div id="chatbot" class="fixed bottom-20 right-4 bg-white rounded-lg shadow-xl hidden flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="font-bold text-primary">Chatbot</h3>
+            <button id="closeChat" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-            </div>
-            <h3 class="text-xl font-semibold mb-2">Interactive Learning Modules</h3>
-            <p class="text-gray-600">Engage with dynamic content that keeps you focused and interested throughout your learning journey.</p>
+            </button>
         </div>
-        
-        <div class="bg-gray-100 p-6 rounded-lg shadow-lg" data-aos="fade-up" data-aos-delay="200">
-            <div class="text-primary mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        <div id="chatMessages" class="flex-grow overflow-y-auto p-4 bg-gray-100">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="p-4 border-t flex">
+            <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow px-3 py-2 border rounded-l-full focus:outline-none focus:ring-2 focus:ring-primary">
+            <button id="sendMessage" class="bg-primary text-white px-4 py-2 rounded-r-full hover:bg-indigo-700 transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-            </div>
-            <h3 class="text-xl font-semibold mb-2">Bite-Sized Learning</h3>
-            <p class="text-gray-600">Short, focused lessons designed to maximize attention span and minimize procrastination.</p>
-        </div>
-        
-        <div class="bg-gray-100 p-6 rounded-lg shadow-lg" data-aos="fade-up" data-aos-delay="300">
-            <div class="text-primary mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-            </div>
-            <h3 class="text-xl font-semibold mb-2">Personalized Learning Paths</h3>
-            <p class="text-gray-600">Courses adapt to your learning style and pace, ensuring an engaging and effective educational experience.</p>
+            </button>
         </div>
     </div>
-    <div class="mt-12 text-center">
-        <a href="#" class="bg-primary text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-indigo-700 transition duration-300">
-            Explore Our Courses
-        </a>
-    </div>
-</div>
-</section>
-</main>
 
-<footer class="bg-gray-800 text-white py-8">
-    <div class="container mx-auto px-4">
-        <div class="flex justify-between items-center">
-            <span>&copy; 2024 Class Mate. All rights reserved.</span>
-            <div class="space-x-4">
-                <a href="#" class="hover:text-primary"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="hover:text-primary"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="hover:text-primary"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="hover:text-primary"><i class="fab fa-linkedin-in"></i></a>
-            </div>
-        </div>
-    </div>
-</footer>
-
-<button id="chatToggle" class="fixed bottom-4 right-4 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition duration-300">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-    </svg>
-</button>
-
-<div id="chatbot" class="fixed bottom-20 right-4 bg-white rounded-lg shadow-xl hidden flex flex-col">
-    <div class="flex justify-between items-center p-4 border-b">
-        <h3 class="font-bold text-primary">Chatbot</h3>
-        <button id="closeChat" class="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-    </div>
-    <div id="chatMessages" class="flex-grow overflow-y-auto p-4 bg-gray-100">
-        <!-- Chat messages will appear here -->
-    </div>
-    <div class="p-4 border-t flex">
-        <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow px-3 py-2 border rounded-l-full focus:outline-none focus:ring-2 focus:ring-primary">
-        <button id="sendMessage" class="bg-primary text-white px-4 py-2 rounded-r-full hover:bg-indigo-700 transition duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-        </button>
-    </div>
-</div>
-
-<!-- Role Selection Modal -->
+    <!-- Role Selection Modal -->
 <div id="roleModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center">
     <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
     
@@ -313,132 +294,141 @@
         </div>
     </div>
 </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = {
+                chatToggle: document.getElementById('chatToggle'),
+                chatbot: document.getElementById('chatbot'),
+                closeChat: document.getElementById('closeChat'),
+                chatMessages: document.getElementById('chatMessages'),
+                messageInput: document.getElementById('messageInput'),
+                sendMessage: document.getElementById('sendMessage'),
+                modal: document.querySelector('#roleModal'),
+                modalContainer: document.querySelector('.modal-container'),
+                body: document.body,
+                getStartedBtn: document.querySelector('#getStartedBtn'),
+                closeModalButton: document.querySelector('#closeModal'),
+                studentSignIn: document.querySelector('#studentSignIn'),
+                studentSignUp: document.querySelector('#studentSignUp'),
+                teacherSignIn: document.querySelector('#teacherSignIn'),
+                teacherSignUp: document.querySelector('#teacherSignUp')
+            };
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        AOS.init({
-            duration: 1000,
-            once: true,
-        });
-
-        const elements = {
-            chatToggle: document.getElementById('chatToggle'),
-            chatbot: document.getElementById('chatbot'),
-            closeChat: document.getElementById('closeChat'),
-            chatMessages: document.getElementById('chatMessages'),
-            messageInput: document.getElementById('messageInput'),
-            sendMessage: document.getElementById('sendMessage'),
-            modal: document.querySelector('#roleModal'),
-            modalContainer: document.querySelector('.modal-container'),
-            body: document.body,
-            getStartedBtn: document.querySelector('#getStartedBtn'),
-            closeModalButton: document.querySelector('#closeModal'),
-            studentSignIn: document.querySelector('#studentSignIn'),
-            studentSignUp: document.querySelector('#studentSignUp'),
-            teacherSignIn: document.querySelector('#teacherSignIn'),
-            teacherSignUp: document.querySelector('#teacherSignUp'),
-            mobileMenuButton: document.getElementById('mobile-menu-button'),
-            mobileMenu: document.getElementById('mobile-menu')
-        };
-
-        function openModal() {
-            elements.modal.classList.remove('opacity-0', 'pointer-events-none');
-            setTimeout(() => {
-                elements.modalContainer.classList.remove('scale-95', 'opacity-0');
-                elements.modalContainer.classList.add('scale-100', 'opacity-100');
-            }, 50);
-        }
-    
-        function closeModalFunc() {
-            elements.modalContainer.classList.remove('scale-100', 'opacity-100');
-            elements.modalContainer.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                elements.modal.classList.add('opacity-0', 'pointer-events-none');
-            }, 300);
-        }
-            
-        function addMessage(message, isUser = true) {
-            if (!elements.chatMessages) return;
-            const messageElement = document.createElement('div');
-            messageElement.classList.add(
-                'mb-2', 'p-2', 'rounded',
-                isUser ? 'bg-primary' : 'bg-gray-300',
-                isUser ? 'text-white' : 'text-gray-800',
-                isUser ? 'ml-auto' : 'mr-auto', 'max-w-3/4'
-            );
-            messageElement.textContent = message;
-            elements.chatMessages.appendChild(messageElement);
-            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-        }
-
-        // Chatbot functionality
-        elements.chatToggle?.addEventListener('click', () => {
-            elements.chatbot.classList.toggle('hidden');
-        });
-    
-        elements.closeChat?.addEventListener('click', () => {
-            elements.chatbot.classList.add('hidden');
-        });
-    
-        elements.sendMessage?.addEventListener('click', () => {
-            const message = elements.messageInput.value.trim();
-            if (message) {
-                addMessage(message);
-                elements.messageInput.value = '';
+            function openModal() {
+                elements.modal.classList.remove('opacity-0', 'pointer-events-none');
                 setTimeout(() => {
-                    addMessage("Thank you for your message. How can I assist you today?", false);
-                }, 1000);
+                    elements.modalContainer.classList.remove('scale-95', 'opacity-0');
+                    elements.modalContainer.classList.add('scale-100', 'opacity-100');
+                }, 50);
             }
-        });
-    
-        elements.messageInput?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                elements.sendMessage.click();
+        
+            function closeModalFunc() {
+                elements.modalContainer.classList.remove('scale-100', 'opacity-100');
+                elements.modalContainer.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.modal.classList.add('opacity-0', 'pointer-events-none');
+                }, 300);
             }
-        });
-    
-        // Modal functionality
-        elements.getStartedBtn?.addEventListener('click', openModal);
-        elements.closeModalButton?.addEventListener('click', closeModalFunc);
-
-        elements.studentSignIn?.addEventListener('click', () => {
-            window.location.href = 'stu_signin.php';
-        });
-
-        elements.studentSignUp?.addEventListener('click', () => {
-            window.location.href = 'stu_signup.php';
-        });
-
-        elements.teacherSignIn?.addEventListener('click', () => {
-            window.location.href = 'tea_signin.php';
-        });
-
-        elements.teacherSignUp?.addEventListener('click', () => {
-            window.location.href = 'tea_signup.php';
-        });
-
-        // Close modal if clicked outside of it
-        window.addEventListener('click', (e) => {
-            if (e.target === elements.modal) {
-                closeModalFunc();
+                
+            function addMessage(message, isUser = true) {
+                if (!elements.chatMessages) return;
+                const messageElement = document.createElement('div');
+                messageElement.classList.add(
+                    'mb-2', 'p-2', 'rounded',
+                    isUser ? 'bg-primary' : 'bg-gray-300',
+                    isUser ? 'text-white' : 'text-gray-800',
+                    isUser ? 'ml-auto' : 'mr-auto', 'max-w-3/4'
+                );
+                messageElement.textContent = message;
+                elements.chatMessages.appendChild(messageElement);
+                elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
             }
-        });
-    
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
+        
+            function toggleModal() {
+                elements.modal.classList.toggle('opacity-0');
+                elements.modal.classList.toggle('pointer-events-none');
+                elements.body.classList.toggle('modal-active');
+            }
+        
+            // Open and close modal with animation
+            function openModal() {
+                elements.modal.classList.remove('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    elements.modalContainer.classList.remove('scale-95', 'opacity-0');
+                    elements.modalContainer.classList.add('scale-100', 'opacity-100');
+                }, 50);
+            }
+        
+            function closeModalFunc() {
+                elements.modalContainer.classList.remove('scale-100', 'opacity-100');
+                elements.modalContainer.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    elements.modal.classList.add('opacity-0', 'pointer-events-none');
+                }, 300);
+            }
+        
+            // Chatbot functionality
+            elements.chatToggle?.addEventListener('click', () => {
+                elements.chatbot.classList.toggle('hidden');
+            });
+        
+            elements.closeChat?.addEventListener('click', () => {
+                elements.chatbot.classList.add('hidden');
+            });
+        
+            elements.sendMessage?.addEventListener('click', () => {
+                const message = elements.messageInput.value.trim();
+                if (message) {
+                    addMessage(message);
+                    elements.messageInput.value = '';
+                    setTimeout(() => {
+                        addMessage("Thank you for your message. How can I assist you today?", false);
+                    }, 1000);
+                }
+            });
+        
+            elements.messageInput?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    elements.sendMessage.click();
+                }
+            });
+        
+             // Modal functionality
+            elements.getStartedBtn?.addEventListener('click', openModal);
+            elements.closeModalButton?.addEventListener('click', closeModalFunc);
+
+            elements.studentSignIn?.addEventListener('click', () => {
+                window.location.href = 'stu_signin.php';
+            });
+
+            elements.studentSignUp?.addEventListener('click', () => {
+                window.location.href = 'stu_signup.php';
+            });
+
+            elements.teacherSignIn?.addEventListener('click', () => {
+                window.location.href = 'tea_signin.php';
+            });
+
+            elements.teacherSignUp?.addEventListener('click', () => {
+                window.location.href = 'tea_signup.php';
+            });
+
+            // Close modal if clicked outside of it
+            window.addEventListener('click', (e) => {
+                if (e.target === elements.modal) {
+                    closeModalFunc();
+                }
+            });
+        
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
                 });
             });
-        });
+        });        
+    </script>
 
-        // Mobile menu toggle
-        elements.mobileMenuButton?.addEventListener('click', () => {
-            elements.mobileMenu.classList.toggle('hidden');
-        });
-    });        
-</script>
-</body>
-</html>
