@@ -1,3 +1,5 @@
+# LIBRARIES THAT IS USED:
+
 import streamlit as st
 import PyPDF2
 import docx
@@ -9,6 +11,7 @@ import json
 from streamlit_lottie import st_lottie
 import requests
 
+# FUNCTIONS THAT HAVE BEEN DEFINED:
 class QuizApp:
     def __init__(self):
         if 'quiz_name' not in st.session_state:
@@ -88,6 +91,8 @@ class QuizApp:
             questions.append(self.format_question(current_question, current_options))
 
         return questions
+
+# HOW TO PARSE THROUGH THE UPLOADED DOCUMENT : 
 
     def parse_questions_by_keywords(self, content: str) -> List[Dict[str, Union[str, List[str]]]]:
         questions = []
@@ -262,6 +267,7 @@ class QuizApp:
         st.session_state.pop('user_answers', None)
         st.session_state.pop('start_time', None)
       
+ #      
         
     def display_score_feedback(self, score_percentage, correct_count, total_questions, start_time, end_time):
             # Determine which animation to show based on score
