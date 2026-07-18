@@ -256,6 +256,17 @@ class AIPlanResponse(BaseModel):
     generated_at: datetime
 
 
+class AIInteractionOut(BaseModel):
+    """Serialized AIInteraction row — used for the coach history feed."""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    interaction_type: str
+    input_data: dict[str, Any]
+    output_data: dict[str, Any]
+    model_used: str
+    created_at: datetime
+
+
 # ---------- Dashboard ----------
 class DashboardOut(BaseModel):
     user: UserOut

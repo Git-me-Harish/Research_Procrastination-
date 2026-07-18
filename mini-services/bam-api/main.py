@@ -21,7 +21,8 @@ from schemas import (
     TaskCreate, TaskUpdate, TaskOut, FocusSessionCreate, FocusSessionUpdate,
     FocusSessionOut, MoodEntryCreate, MoodEntryOut, AchievementOut,
     UserAchievementOut, AIBreakdownRequest, AIBreakdownResponse,
-    AICoachRequest, AICoachResponse, AIPlanRequest, AIPlanResponse, DashboardOut,
+    AICoachRequest, AICoachResponse, AIPlanRequest, AIPlanResponse,
+    AIInteractionOut, DashboardOut,
     ChainCreate, ChainOut, ChainLinkToggleOut,
     ShieldOut, ShieldSpendRequest, ShieldSpendResponse,
     BreatheSessionCreate, BreatheSessionOut,
@@ -281,10 +282,13 @@ def profile_summary(
         ))
 
     # Chain completions (use last_completed_date on chains)
+    # NOTE: keep the timestamp naive (no tzinfo) so it is comparable with the
+    # naive datetimes returned by SQLAlchemy for the other activity sources.
+    # Mixing tz-aware and tz-naive datetimes raises TypeError when sorting.
     for c in db.query(PowerChain).filter(
         PowerChain.user_id == user.id, PowerChain.last_completed_date.isnot(None)
     ).order_by(PowerChain.last_completed_date.desc()).limit(10).all():
-        ts = datetime.strptime(c.last_completed_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        ts = datetime.strptime(c.last_completed_date, "%Y-%m-%d")
         activity.append(ProfileActivityItem(
             kind="chain_completed",
             title=f"Chain day: {c.title}",
@@ -329,8 +333,10 @@ def profile_summary(
             xp=0,
         ))
 
-    # Sort by timestamp desc and trim to 15
-    activity.sort(key=lambda a: a.timestamp, reverse=True)
+    # Sort by timestamp desc and trim to 15.
+    # Use a sentinel (datetime.min) for any None timestamps so the sort never crashes.
+    _EPOCH = datetime.min
+    activity.sort(key=lambda a: a.timestamp or _EPOCH, reverse=True)
     activity = activity[:15]
 
     return ProfileSummary(
@@ -684,15 +690,28 @@ async def ai_plan(
     return AIPlanResponse(plan=plan, generated_at=datetime.now(timezone.utc))
 
 
-@app.get(f"{settings.API_V1_PREFIX}/ai/interactions")
+@app.get(
+    f"{settings.API_V1_PREFIX}/ai/interactions",
+    response_model=list[AIInteractionOut],
+)
 def list_ai_interactions(
     limit: int = Query(50, ge=1, le=500),
+    interaction_type: str | None = Query(
+        None,
+        description="Filter by type: coach, breakdown, plan, motivation",
+    ),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return db.query(AIInteraction).filter(AIInteraction.user_id == user.id).order_by(
-        AIInteraction.created_at.desc()
-    ).limit(limit).all()
+    """Return the user's AI interaction history.
+
+    Optional `interaction_type` filter lets the frontend fetch only coach chats
+    (e.g. `?interaction_type=coach`) for the coach history panel.
+    """
+    q = db.query(AIInteraction).filter(AIInteraction.user_id == user.id)
+    if interaction_type:
+        q = q.filter(AIInteraction.interaction_type == interaction_type)
+    return q.order_by(AIInteraction.created_at.desc()).limit(limit).all()
 
 
 # ============================================================

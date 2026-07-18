@@ -336,3 +336,88 @@ Stage Summary:
 - ✅ Verified end-to-end with agent-browser (18 screenshots) + VLM visual analysis
 - ✅ Application is now 100% complete — every nav item has a fully-functional view, every
   user-facing action has BANG/sound feedback, every UI element uses custom SVG icons
+
+---
+Task ID: 5
+Agent: main (Super Z)
+Task: Fix three issues reported by user:
+  (1) Runtime Error 500 on /profile/summary when clicking profile (apiFetch throwing Error
+      after backend returned Internal Server Error).
+  (2) Remove redundant "Profile" button from the nav bar (user already has the avatar icon
+      next to logout that opens profile).
+  (3) Add AI Coach history — let users see and replay past coach conversations.
+
+Work Log:
+- Inspected bam-app.tsx, bam-shell.tsx, profile-view.tsx, ai-coach.tsx, api.ts, main.py,
+  models.py, schemas.py to map the data flow.
+- Diagnosed root cause of profile 500:
+    * In `profile_summary()` (main.py:287), the chain-completion timestamp was built as
+      `datetime.strptime(c.last_completed_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)`
+      → tz-AWARE datetime.
+    * All other activity timestamps (Task.completed_at, FocusSession.ended_at,
+      MoodEntry.created_at, BreatheSession.created_at, StreakShield.earned_at,
+      UserAchievement.earned_at, AIInteraction.created_at) come from SQLAlchemy DateTime
+      columns declared WITHOUT `timezone=True` → tz-NAIVE datetimes.
+    * `activity.sort(key=lambda a: a.timestamp, reverse=True)` then raised
+      TypeError("can't compare offset-naive and offset-aware datetimes") → 500.
+    * Confirmed by direct repro: `datetime(2026,7,18) > datetime(...).replace(tzinfo=utc)`
+      raises TypeError in Python 3.
+    * Triggered for any user who had BOTH a chain completion AND any other activity
+      (task, mood, AI chat, etc.).
+- Fix #1 (profile 500): dropped `.replace(tzinfo=timezone.utc)` from the chain ts so it
+  is naive and comparable with the other timestamps. Also hardened the sort with a
+  `datetime.min` sentinel for any future None timestamps.
+- Fix #2 (redundant Profile nav button): removed the `{id:"profile",...}` entry from
+  NAV_ITEMS in bam-shell.tsx (kept the comment explaining why), removed the now-unused
+  IconUser import, and changed the avatar button from `hidden sm:flex` to `flex` so it
+  stays accessible on mobile (since the nav no longer has Profile).
+- Fix #3a (backend AI history): added `AIInteractionOut` Pydantic schema in schemas.py
+  with `model_config = ConfigDict(from_attributes=True)` so SQLAlchemy rows serialize
+  cleanly. Updated `/ai/interactions` endpoint in main.py with
+  `response_model=list[AIInteractionOut]` + new optional `interaction_type` query
+  parameter so the frontend can fetch only "coach" chats. Without response_model,
+  FastAPI was returning raw SQLAlchemy ORM objects that would fail to serialize in
+  production (worked accidentally in dev because of pydantic's lenient mode).
+- Fix #3b (frontend AI history): rewrote src/components/comic/ai-coach.tsx to:
+    * Add `loadHistory()` callback that calls `api.listAIInteractions("coach", 50)`.
+    * Lazy-load history the first time the user opens the history panel.
+    * Auto-refresh history after each new coach reply (if panel was already open OR
+      has been opened once).
+    * Show a "History" toggle button with a badge showing the chat count.
+    * Show "Reset" button to clear the current conversation back to the welcome state.
+    * Render each past chat as a clickable card (timestamp, action word, model badge,
+      user message preview, coach reply preview). Clicking replays that Q&A in the
+      main chat view with a "REPLAY!" bang.
+    * Each message in the chat now also shows a relative timestamp ("just now",
+      "5m ago", "2h ago", "3d ago").
+- Fix #3c (frontend API client): added `AIInteraction` type to api.ts and upgraded
+  `api.listAIInteractions` to accept `(interactionType?: string, limit = 50)` and return
+  `AIInteraction[]` instead of `any[]`.
+- Restarted the FastAPI daemon via scripts/start-bam-api.py (double-fork so it survives
+  the parent bash session exiting) — confirmed clean startup on port 8001.
+- Smoke-tested end-to-end with a fresh user:
+    * register → 201
+    * onboarding/submit → 200 (type=perfectionist)
+    * ai/coach → 200 (real GLM reply received)
+    * chains (2 links) → 201, toggle both → 200 (this is the exact bug trigger:
+      a user with both a chain completion AND an AI interaction in the same feed)
+    * /profile/summary → 200 ✅ (was 500 before)
+    * /ai/interactions?interaction_type=coach → 200, returns 1 coach interaction with
+      full input_data.message and output_data.reply
+    * /ai/interactions (no filter) → 200, returns all interactions
+- Confirmed Next.js dev server still compiles cleanly after frontend changes
+  (dev.log: "✓ Compiled in 221ms", HTTP 200 on /).
+
+Stage Summary:
+- ✅ Profile 500 bug fixed at the root cause (tz-aware vs tz-naive datetime comparison
+  in the activity sort). Profile now loads for users with mixed activity types.
+- ✅ Redundant "Profile" nav button removed. Avatar icon (now visible on mobile + desktop)
+  remains the single entry point to the profile view.
+- ✅ AI Coach history feature shipped end-to-end:
+    - Backend: typed `AIInteractionOut` schema + filterable `/ai/interactions` endpoint
+    - Frontend: lazy-loaded history panel, replay-on-click, auto-refresh, chat count
+      badge, relative timestamps on every message
+- ✅ All changes are minimal, targeted, and follow existing code patterns (no new
+  dependencies, no mock data, Windows-compatible).
+- ✅ Backend restart script (`scripts/start-bam-api.py`) used to bring up the daemon
+  cleanly so the user's local dev session picks up the fixes.

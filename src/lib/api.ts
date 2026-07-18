@@ -213,6 +213,15 @@ export interface AIPlanResponse {
   generated_at: string;
 }
 
+export interface AIInteraction {
+  id: number;
+  interaction_type: string; // "coach" | "breakdown" | "plan" | "motivation"
+  input_data: Record<string, any>;
+  output_data: Record<string, any>;
+  model_used: string;
+  created_at: string;
+}
+
 export interface QuizQuestion {
   id: string;
   text: string;
@@ -345,7 +354,10 @@ export const api = {
   aiCoach: (data: { message: string; context?: any }) =>
     apiFetch<AICoachResponse>("/ai/coach", { method: "POST", body: JSON.stringify(data) }),
   aiPlan: () => apiFetch<AIPlanResponse>("/ai/plan", { method: "POST", body: JSON.stringify({}) }),
-  listAIInteractions: () => apiFetch<any[]>("/ai/interactions"),
+  listAIInteractions: (interactionType?: string, limit = 50) =>
+    apiFetch<AIInteraction[]>(
+      `/ai/interactions?limit=${limit}${interactionType ? `&interaction_type=${interactionType}` : ""}`,
+    ),
 
   // Dashboard
   dashboard: () => apiFetch<Dashboard>("/dashboard"),

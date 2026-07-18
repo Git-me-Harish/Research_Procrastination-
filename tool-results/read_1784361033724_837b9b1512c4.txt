@@ -1,0 +1,1195 @@
+     1→"""
+     2→BAM! Anti-Procrastination Platform — FastAPI Application
+     3→"""
+     4→import random
+     5→from datetime import datetime, timezone, timedelta
+     6→from fastapi import FastAPI, Depends, HTTPException, status, Query
+     7→from fastapi.middleware.cors import CORSMiddleware
+     8→from sqlalchemy.orm import Session
+     9→from sqlalchemy import func, Integer
+    10→
+    11→from config import settings
+    12→from database import get_db, init_db
+    13→from models import (
+    14→    User, Task, TaskStatus, TaskPriority, FocusSession, SessionStatus, SessionType,
+    15→    MoodEntry, Achievement, UserAchievement, AIInteraction,
+    16→    PowerChain, ChainLink, StreakShield, BreatheSession, KPISnapshot,
+    17→)
+    18→from schemas import (
+    19→    UserCreate, UserLogin, UserOut, TokenOut, OnboardingSubmit,
+    20→    UserUpdate, ProfileSummary, ProfileActivityItem,
+    21→    TaskCreate, TaskUpdate, TaskOut, FocusSessionCreate, FocusSessionUpdate,
+    22→    FocusSessionOut, MoodEntryCreate, MoodEntryOut, AchievementOut,
+    23→    UserAchievementOut, AIBreakdownRequest, AIBreakdownResponse,
+    24→    AICoachRequest, AICoachResponse, AIPlanRequest, AIPlanResponse, DashboardOut,
+    25→    ChainCreate, ChainOut, ChainLinkToggleOut,
+    26→    ShieldOut, ShieldSpendRequest, ShieldSpendResponse,
+    27→    BreatheSessionCreate, BreatheSessionOut,
+    28→    KPIOut,
+    29→)
+    30→from security import (
+    31→    hash_password, verify_password, create_access_token, get_current_user
+    32→)
+    33→from gamification import add_xp, update_streak, evaluate_achievements, xp_for_level
+    34→from ai_service import generate_task_breakdown, generate_personalized_plan, ai_coach_chat
+    35→from onboarding import get_quiz_questions, get_type_info, apply_onboarding
+    36→from kpi_engine import compute_all_kpis, award_shield
+    37→
+    38→app = FastAPI(
+    39→    title=settings.APP_NAME,
+    40→    version="1.0.0",
+    41→    description="BAM! — Beat Avoidance Mode. Comic-style anti-procrastination platform.",
+    42→)
+    43→
+    44→app.add_middleware(
+    45→    CORSMiddleware,
+    46→    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    47→    allow_credentials=True,
+    48→    allow_methods=["*"],
+    49→    allow_headers=["*"],
+    50→)
+    51→
+    52→
+    53→@app.on_event("startup")
+    54→def on_startup():
+    55→    init_db()
+    56→
+    57→
+    58→@app.get("/")
+    59→def health():
+    60→    return {"app": settings.APP_NAME, "status": "running", "version": "1.0.0"}
+    61→
+    62→
+    63→@app.get("/health")
+    64→def health_check():
+    65→    return {"status": "ok", "service": "bam-api"}
+    66→
+    67→
+    68→# ============================================================
+    69→# AUTH
+    70→# ============================================================
+    71→@app.post(f"{settings.API_V1_PREFIX}/auth/register", response_model=TokenOut, status_code=201)
+    72→def register(payload: UserCreate, db: Session = Depends(get_db)):
+    73→    if db.query(User).filter((User.email == payload.email) | (User.username == payload.username)).first():
+    74→        raise HTTPException(status_code=400, detail="Email or username already registered")
+    75→    user = User(
+    76→        email=payload.email,
+    77→        username=payload.username,
+    78→        hashed_password=hash_password(payload.password),
+    79→        display_name=payload.display_name or payload.username,
+    80→    )
+    81→    db.add(user)
+    82→    db.commit()
+    83→    db.refresh(user)
+    84→    token = create_access_token(str(user.id))
+    85→    return TokenOut(access_token=token, user=UserOut.model_validate(user))
+    86→
+    87→
+    88→@app.post(f"{settings.API_V1_PREFIX}/auth/login", response_model=TokenOut)
+    89→def login(payload: UserLogin, db: Session = Depends(get_db)):
+    90→    user = db.query(User).filter(User.email == payload.email).first()
+    91→    if not user or not verify_password(payload.password, user.hashed_password):
+    92→        raise HTTPException(status_code=401, detail="Invalid credentials")
+    93→    if not user.is_active:
+    94→        raise HTTPException(status_code=403, detail="Account deactivated")
+    95→    token = create_access_token(str(user.id))
+    96→    return TokenOut(access_token=token, user=UserOut.model_validate(user))
+    97→
+    98→
+    99→@app.get(f"{settings.API_V1_PREFIX}/auth/me", response_model=UserOut)
+   100→def me(user: User = Depends(get_current_user)):
+   101→    return user
+   102→
+   103→
+   104→@app.patch(f"{settings.API_V1_PREFIX}/auth/me", response_model=UserOut)
+   105→def update_me(
+   106→    payload: UserUpdate,
+   107→    user: User = Depends(get_current_user),
+   108→    db: Session = Depends(get_db),
+   109→):
+   110→    """Update the current user's profile (display name, sound, theme)."""
+   111→    if payload.display_name is not None:
+   112→        user.display_name = payload.display_name.strip()
+   113→    if payload.sound_enabled is not None:
+   114→        user.sound_enabled = payload.sound_enabled
+   115→    if payload.theme is not None:
+   116→        user.theme = payload.theme
+   117→    db.commit()
+   118→    db.refresh(user)
+   119→    return user
+   120→
+   121→
+   122→@app.post(f"{settings.API_V1_PREFIX}/onboarding/retake", response_model=UserOut)
+   123→def retake_onboarding(
+   124→    user: User = Depends(get_current_user),
+   125→    db: Session = Depends(get_db),
+   126→):
+   127→    """Reset onboarding so the user can re-take the procrastination-type quiz.
+   128→
+   129→    The existing personalized_plan and procrastination_type are kept until the
+   130→    user submits the new quiz answers via /onboarding/submit.
+   131→    """
+   132→    user.onboarding_completed_at = None
+   133→    db.commit()
+   134→    db.refresh(user)
+   135→    return user
+   136→
+   137→
+   138→@app.get(f"{settings.API_V1_PREFIX}/profile/summary", response_model=ProfileSummary)
+   139→def profile_summary(
+   140→    user: User = Depends(get_current_user),
+   141→    db: Session = Depends(get_db),
+   142→):
+   143→    """Aggregated profile data — lifetime totals, level progress, recent activity."""
+   144→    # ---- Level progress ----
+   145→    cur_level_xp = xp_for_level(user.level)
+   146→    next_level = user.level + 1
+   147→    next_level_xp = xp_for_level(next_level)
+   148→    xp_into_level = user.xp - cur_level_xp
+   149→    xp_for_next_level = next_level_xp - cur_level_xp
+   150→    xp_to_next_level = max(0, next_level_xp - user.xp)
+   151→    progress_pct = (xp_into_level / xp_for_next_level * 100) if xp_for_next_level > 0 else 100
+   152→    progress_pct = max(0, min(100, progress_pct))
+   153→
+   154→    # ---- Task totals ----
+   155→    total_tasks = db.query(func.count(Task.id)).filter(Task.user_id == user.id).scalar() or 0
+   156→    tasks_completed = db.query(func.count(Task.id)).filter(
+   157→        Task.user_id == user.id, Task.status == TaskStatus.COMPLETED
+   158→    ).scalar() or 0
+   159→    tasks_pending = total_tasks - tasks_completed
+   160→
+   161→    # ---- Focus totals ----
+   162→    focus_agg = db.query(
+   163→        func.coalesce(func.sum(FocusSession.actual_minutes), 0),
+   164→        func.count(FocusSession.id),
+   165→    ).filter(
+   166→        FocusSession.user_id == user.id,
+   167→        FocusSession.status == SessionStatus.COMPLETED
+   168→    ).one()
+   169→    total_focus_minutes = int(focus_agg[0] or 0)
+   170→    total_focus_sessions = int(focus_agg[1] or 0)
+   171→
+   172→    # ---- Breathe totals ----
+   173→    breathe_agg = db.query(
+   174→        func.count(BreatheSession.id),
+   175→        func.coalesce(func.sum(BreatheSession.duration_seconds), 0),
+   176→    ).filter(BreatheSession.user_id == user.id).one()
+   177→    total_breathe_sessions = int(breathe_agg[0] or 0)
+   178→    total_breathe_minutes = int((breathe_agg[1] or 0) // 60)
+   179→
+   180→    # ---- Chain totals ----
+   181→    chain_agg = db.query(
+   182→        func.count(PowerChain.id),
+   183→        func.coalesce(func.sum(PowerChain.total_completions), 0),
+   184→        func.coalesce(func.max(PowerChain.longest_chain_days), 0),
+   185→    ).filter(PowerChain.user_id == user.id).one()
+   186→    total_chains = int(chain_agg[0] or 0)
+   187→    total_chain_completions = int(chain_agg[1] or 0)
+   188→    longest_chain = int(chain_agg[2] or 0)
+   189→
+   190→    # ---- Shield totals ----
+   191→    shield_agg = db.query(
+   192→        func.count(StreakShield.id),
+   193→        func.coalesce(func.sum(StreakShield.is_spent.cast(Integer)), 0),
+   194→    ).filter(StreakShield.user_id == user.id).one()
+   195→    total_shields_earned = int(shield_agg[0] or 0)
+   196→    total_shields_spent = int(shield_agg[1] or 0)
+   197→
+   198→    # ---- Achievements ----
+   199→    achievements_earned = db.query(func.count(UserAchievement.id)).filter(
+   200→        UserAchievement.user_id == user.id
+   201→    ).scalar() or 0
+   202→    achievements_total = db.query(func.count(Achievement.id)).scalar() or 0
+   203→
+   204→    # ---- Mood + AI ----
+   205→    mood_entries = db.query(func.count(MoodEntry.id)).filter(
+   206→        MoodEntry.user_id == user.id
+   207→    ).scalar() or 0
+   208→    ai_interactions = db.query(func.count(AIInteraction.id)).filter(
+   209→        AIInteraction.user_id == user.id
+   210→    ).scalar() or 0
+   211→
+   212→    # ---- Days active (distinct dates from all activity tables) ----
+   213→    task_dates = db.query(func.distinct(func.date(Task.created_at))).filter(
+   214→        Task.user_id == user.id
+   215→    ).all()
+   216→    focus_dates = db.query(func.distinct(func.date(FocusSession.started_at))).filter(
+   217→        FocusSession.user_id == user.id
+   218→    ).all()
+   219→    mood_dates = db.query(func.distinct(func.date(MoodEntry.created_at))).filter(
+   220→        MoodEntry.user_id == user.id
+   221→    ).all()
+   222→    breathe_dates = db.query(func.distinct(func.date(BreatheSession.created_at))).filter(
+   223→        BreatheSession.user_id == user.id
+   224→    ).all()
+   225→    all_dates = set()
+   226→    for rows in (task_dates, focus_dates, mood_dates, breathe_dates):
+   227→        for (d,) in rows:
+   228→            if d:
+   229→                all_dates.add(str(d))
+   230→    days_active = len(all_dates)
+   231→
+   232→    # ---- Recent activity feed (merge last 15 across sources) ----
+   233→    activity: list[ProfileActivityItem] = []
+   234→
+   235→    # Tasks completed
+   236→    for t in db.query(Task).filter(
+   237→        Task.user_id == user.id, Task.status == TaskStatus.COMPLETED, Task.completed_at.isnot(None)
+   238→    ).order_by(Task.completed_at.desc()).limit(10).all():
+   239→        activity.append(ProfileActivityItem(
+   240→            kind="task_completed",
+   241→            title=f"Completed: {t.title}",
+   242→            detail=f"{t.actual_minutes or 0}m actual / {t.estimated_minutes or 0}m est",
+   243→            timestamp=t.completed_at,
+   244→            xp=25 + (t.difficulty or 2) * 10 + (t.estimated_minutes or 25),
+   245→        ))
+   246→
+   247→    # Focus sessions completed
+   248→    for s in db.query(FocusSession).filter(
+   249→        FocusSession.user_id == user.id, FocusSession.status == SessionStatus.COMPLETED
+   250→    ).order_by(FocusSession.ended_at.desc()).limit(10).all():
+   251→        activity.append(ProfileActivityItem(
+   252→            kind="focus_session",
+   253→            title=f"{s.session_type.replace('_',' ').title()} — {s.actual_minutes}m",
+   254→            detail=f"Quality {s.focus_quality}/5 · Distractions {s.distractions}",
+   255→            timestamp=s.ended_at or s.started_at,
+   256→            xp=(s.actual_minutes or 0) * (3 if s.session_type == SessionType.DEEP_WORK else 2),
+   257→        ))
+   258→
+   259→    # Mood logs
+   260→    for m in db.query(MoodEntry).filter(MoodEntry.user_id == user.id).order_by(
+   261→        MoodEntry.created_at.desc()
+   262→    ).limit(10).all():
+   263→        activity.append(ProfileActivityItem(
+   264→            kind="mood_logged",
+   265→            title=f"Mood {m.mood_score}/5 · Energy {m.energy_score}/5",
+   266→            detail=", ".join(m.triggers) if m.triggers else None,
+   267→            timestamp=m.created_at,
+   268→            xp=5,
+   269→        ))
+   270→
+   271→    # Breathe sessions
+   272→    for b in db.query(BreatheSession).filter(BreatheSession.user_id == user.id).order_by(
+   273→        BreatheSession.created_at.desc()
+   274→    ).limit(10).all():
+   275→        activity.append(ProfileActivityItem(
+   276→            kind="breathe_session",
+   277→            title=f"Breathe: {b.technique.replace('_','-')} · {b.cycles_completed} cycles",
+   278→            detail=f"Calm {b.calmness_before}→{b.calmness_after} · {b.duration_seconds}s",
+   279→            timestamp=b.created_at,
+   280→            xp=b.xp_earned or 0,
+   281→        ))
+   282→
+   283→    # Chain completions (use last_completed_date on chains)
+   284→    for c in db.query(PowerChain).filter(
+   285→        PowerChain.user_id == user.id, PowerChain.last_completed_date.isnot(None)
+   286→    ).order_by(PowerChain.last_completed_date.desc()).limit(10).all():
+   287→        ts = datetime.strptime(c.last_completed_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+   288→        activity.append(ProfileActivityItem(
+   289→            kind="chain_completed",
+   290→            title=f"Chain day: {c.title}",
+   291→            detail=f"Day {c.current_chain_days} (best: {c.longest_chain_days})",
+   292→            timestamp=ts,
+   293→            xp=50,
+   294→        ))
+   295→
+   296→    # Shield earned
+   297→    for sh in db.query(StreakShield).filter(StreakShield.user_id == user.id).order_by(
+   298→        StreakShield.earned_at.desc()
+   299→    ).limit(10).all():
+   300→        activity.append(ProfileActivityItem(
+   301→            kind="shield_earned",
+   302→            title=f"{sh.rarity.title()} {sh.shield_color.title()} shield",
+   303→            detail=sh.source_detail or sh.source,
+   304→            timestamp=sh.earned_at,
+   305→            xp=0,
+   306→        ))
+   307→
+   308→    # Achievement earned
+   309→    for ua in db.query(UserAchievement).filter(UserAchievement.user_id == user.id).order_by(
+   310→        UserAchievement.earned_at.desc()
+   311→    ).limit(10).all():
+   312→        activity.append(ProfileActivityItem(
+   313→            kind="achievement_earned",
+   314→            title=f"Trophy: {ua.achievement.title}",
+   315→            detail=ua.achievement.description,
+   316→            timestamp=ua.earned_at,
+   317→            xp=ua.achievement.xp_reward or 0,
+   318→        ))
+   319→
+   320→    # AI interactions
+   321→    for ai in db.query(AIInteraction).filter(AIInteraction.user_id == user.id).order_by(
+   322→        AIInteraction.created_at.desc()
+   323→    ).limit(10).all():
+   324→        activity.append(ProfileActivityItem(
+   325→            kind="ai_interaction",
+   326→            title=f"AI {ai.interaction_type}",
+   327→            detail=ai.model_used,
+   328→            timestamp=ai.created_at,
+   329→            xp=0,
+   330→        ))
+   331→
+   332→    # Sort by timestamp desc and trim to 15
+   333→    activity.sort(key=lambda a: a.timestamp, reverse=True)
+   334→    activity = activity[:15]
+   335→
+   336→    return ProfileSummary(
+   337→        user=user,
+   338→        level=user.level,
+   339→        xp=user.xp,
+   340→        xp_into_level=xp_into_level,
+   341→        xp_for_next_level=xp_for_next_level,
+   342→        xp_to_next_level=xp_to_next_level,
+   343→        next_level=next_level,
+   344→        progress_pct=progress_pct,
+   345→        total_tasks=total_tasks,
+   346→        tasks_completed=tasks_completed,
+   347→        tasks_pending=tasks_pending,
+   348→        total_focus_minutes=total_focus_minutes,
+   349→        total_focus_sessions=total_focus_sessions,
+   350→        total_breathe_sessions=total_breathe_sessions,
+   351→        total_breathe_minutes=total_breathe_minutes,
+   352→        total_chains=total_chains,
+   353→        total_chain_completions=total_chain_completions,
+   354→        longest_chain=longest_chain,
+   355→        total_shields_earned=total_shields_earned,
+   356→        total_shields_spent=total_shields_spent,
+   357→        achievements_earned=achievements_earned,
+   358→        achievements_total=achievements_total,
+   359→        mood_entries=mood_entries,
+   360→        ai_interactions=ai_interactions,
+   361→        member_since=user.created_at,
+   362→        days_active=days_active,
+   363→        procrastination_type=user.procrastination_type.value if user.procrastination_type else "unknown",
+   364→        onboarding_completed_at=user.onboarding_completed_at,
+   365→        recent_activity=activity,
+   366→    )
+   367→
+   368→
+   369→# ============================================================
+   370→# ONBOARDING
+   371→# ============================================================
+   372→@app.get(f"{settings.API_V1_PREFIX}/onboarding/quiz")
+   373→def quiz():
+   374→    return {"questions": get_quiz_questions()}
+   375→
+   376→
+   377→@app.post(f"{settings.API_V1_PREFIX}/onboarding/submit", response_model=UserOut)
+   378→def submit_onboarding(
+   379→    payload: OnboardingSubmit,
+   380→    user: User = Depends(get_current_user),
+   381→    db: Session = Depends(get_db),
+   382→):
+   383→    user = apply_onboarding(user, payload, db)
+   384→    db.refresh(user)
+   385→    return user
+   386→
+   387→
+   388→@app.get(f"{settings.API_V1_PREFIX}/onboarding/type-info")
+   389→def type_info(ptype: str = Query(...)):
+   390→    return get_type_info(ptype)
+   391→
+   392→
+   393→@app.get(f"{settings.API_V1_PREFIX}/onboarding/my-type")
+   394→def my_type(user: User = Depends(get_current_user)):
+   395→    return {
+   396→        "type": user.procrastination_type.value if user.procrastination_type else "unknown",
+   397→        "info": get_type_info(user.procrastination_type),
+   398→        "onboarded": user.onboarding_completed_at is not None,
+   399→    }
+   400→
+   401→
+   402→# ============================================================
+   403→# TASKS
+   404→# ============================================================
+   405→@app.post(f"{settings.API_V1_PREFIX}/tasks", response_model=TaskOut, status_code=201)
+   406→def create_task(
+   407→    payload: TaskCreate,
+   408→    user: User = Depends(get_current_user),
+   409→    db: Session = Depends(get_db),
+   410→):
+   411→    action_words = ["POW!", "BAM!", "ZAP!", "BOOM!", "WHAM!", "KAPOW!"]
+   412→    task = Task(
+   413→        user_id=user.id,
+   414→        title=payload.title,
+   415→        description=payload.description,
+   416→        priority=TaskPriority(payload.priority),
+   417→        category=payload.category,
+   418→        estimated_minutes=payload.estimated_minutes,
+   419→        due_date=payload.due_date,
+   420→        energy_required=payload.energy_required,
+   421→        difficulty=payload.difficulty,
+   422→        action_word=random.choice(action_words),
+   423→    )
+   424→    db.add(task)
+   425→    db.commit()
+   426→    db.refresh(task)
+   427→    return task
+   428→
+   429→
+   430→@app.get(f"{settings.API_V1_PREFIX}/tasks", response_model=list[TaskOut])
+   431→def list_tasks(
+   432→    status_filter: str | None = Query(None, alias="status"),
+   433→    category: str | None = None,
+   434→    limit: int = Query(100, ge=1, le=500),
+   435→    user: User = Depends(get_current_user),
+   436→    db: Session = Depends(get_db),
+   437→):
+   438→    q = db.query(Task).filter(Task.user_id == user.id)
+   439→    if status_filter:
+   440→        q = q.filter(Task.status == TaskStatus(status_filter))
+   441→    if category:
+   442→        q = q.filter(Task.category == category)
+   443→    return q.order_by(Task.created_at.desc()).limit(limit).all()
+   444→
+   445→
+   446→@app.get(f"{settings.API_V1_PREFIX}/tasks/{{task_id}}", response_model=TaskOut)
+   447→def get_task(
+   448→    task_id: int,
+   449→    user: User = Depends(get_current_user),
+   450→    db: Session = Depends(get_db),
+   451→):
+   452→    task = db.query(Task).filter(Task.id == task_id, Task.user_id == user.id).first()
+   453→    if not task:
+   454→        raise HTTPException(status_code=404, detail="Task not found")
+   455→    return task
+   456→
+   457→
+   458→@app.patch(f"{settings.API_V1_PREFIX}/tasks/{{task_id}}", response_model=TaskOut)
+   459→def update_task(
+   460→    task_id: int,
+   461→    payload: TaskUpdate,
+   462→    user: User = Depends(get_current_user),
+   463→    db: Session = Depends(get_db),
+   464→):
+   465→    task = db.query(Task).filter(Task.id == task_id, Task.user_id == user.id).first()
+   466→    if not task:
+   467→        raise HTTPException(status_code=404, detail="Task not found")
+   468→
+   469→    was_completed = task.status == TaskStatus.COMPLETED
+   470→    update_data = payload.model_dump(exclude_unset=True)
+   471→
+   472→    if "status" in update_data:
+   473→        new_status = TaskStatus(update_data["status"])
+   474→        task.status = new_status
+   475→        if new_status == TaskStatus.COMPLETED and not was_completed:
+   476→            task.completed_at = datetime.now(timezone.utc)
+   477→            # Award XP based on difficulty
+   478→            xp = 25 + (task.difficulty or 2) * 10 + (task.estimated_minutes or 25)
+   479→            xp_summary = add_xp(user, xp, db)
+   480→            update_streak(user, db)
+   481→            new_ach = evaluate_achievements(user, db)
+   482→            update_data["_xp_awarded"] = xp
+   483→            update_data["_new_achievements"] = new_ach
+   484→        elif was_completed and new_status != TaskStatus.COMPLETED:
+   485→            task.completed_at = None
+   486→
+   487→    for k in ("title", "description", "priority", "category",
+   488→              "estimated_minutes", "actual_minutes", "due_date",
+   489→              "breakdown", "energy_required", "difficulty"):
+   490→        if k in update_data:
+   491→            setattr(task, k, update_data[k])
+   492→
+   493→    db.commit()
+   494→    db.refresh(task)
+   495→    return task
+   496→
+   497→
+   498→@app.delete(f"{settings.API_V1_PREFIX}/tasks/{{task_id}}", status_code=204)
+   499→def delete_task(
+   500→    task_id: int,
+   501→    user: User = Depends(get_current_user),
+   502→    db: Session = Depends(get_db),
+   503→):
+   504→    task = db.query(Task).filter(Task.id == task_id, Task.user_id == user.id).first()
+   505→    if not task:
+   506→        raise HTTPException(status_code=404, detail="Task not found")
+   507→    db.delete(task)
+   508→    db.commit()
+   509→
+   510→
+   511→# ============================================================
+   512→# FOCUS SESSIONS
+   513→# ============================================================
+   514→@app.post(f"{settings.API_V1_PREFIX}/focus-sessions", response_model=FocusSessionOut, status_code=201)
+   515→def create_session(
+   516→    payload: FocusSessionCreate,
+   517→    user: User = Depends(get_current_user),
+   518→    db: Session = Depends(get_db),
+   519→):
+   520→    if payload.task_id:
+   521→        task = db.query(Task).filter(Task.id == payload.task_id, Task.user_id == user.id).first()
+   522→        if not task:
+   523→            raise HTTPException(status_code=404, detail="Task not found")
+   524→        task.status = TaskStatus.IN_PROGRESS
+   525→        db.commit()
+   526→
+   527→    session = FocusSession(
+   528→        user_id=user.id,
+   529→        task_id=payload.task_id,
+   530→        session_type=SessionType(payload.session_type),
+   531→        planned_minutes=payload.planned_minutes,
+   532→        status=SessionStatus.ACTIVE,
+   533→    )
+   534→    db.add(session)
+   535→    db.commit()
+   536→    db.refresh(session)
+   537→    return session
+   538→
+   539→
+   540→@app.get(f"{settings.API_V1_PREFIX}/focus-sessions", response_model=list[FocusSessionOut])
+   541→def list_sessions(
+   542→    limit: int = Query(50, ge=1, le=500),
+   543→    user: User = Depends(get_current_user),
+   544→    db: Session = Depends(get_db),
+   545→):
+   546→    return db.query(FocusSession).filter(FocusSession.user_id == user.id).order_by(
+   547→        FocusSession.started_at.desc()
+   548→    ).limit(limit).all()
+   549→
+   550→
+   551→@app.patch(f"{settings.API_V1_PREFIX}/focus-sessions/{{session_id}}", response_model=FocusSessionOut)
+   552→def update_session(
+   553→    session_id: int,
+   554→    payload: FocusSessionUpdate,
+   555→    user: User = Depends(get_current_user),
+   556→    db: Session = Depends(get_db),
+   557→):
+   558→    session = db.query(FocusSession).filter(
+   559→        FocusSession.id == session_id, FocusSession.user_id == user.id
+   560→    ).first()
+   561→    if not session:
+   562→        raise HTTPException(status_code=404, detail="Session not found")
+   563→
+   564→    update_data = payload.model_dump(exclude_unset=True)
+   565→    was_completed = session.status == SessionStatus.COMPLETED
+   566→
+   567→    for k, v in update_data.items():
+   568→        setattr(session, k, v)
+   569→
+   570→    if "status" in update_data and update_data["status"] == "completed" and not was_completed:
+   571→        session.ended_at = datetime.now(timezone.utc)
+   572→        if session.actual_minutes == 0:
+   573→            session.actual_minutes = session.planned_minutes
+   574→        # Award XP
+   575→        xp = session.actual_minutes * 2
+   576→        if session.session_type == SessionType.DEEP_WORK:
+   577→            xp = session.actual_minutes * 3
+   578→        add_xp(user, xp, db)
+   579→        update_streak(user, db)
+   580→        new_ach = evaluate_achievements(user, db)
+   581→        # Update task actual minutes if linked
+   582→        if session.task_id:
+   583→            task = db.query(Task).filter(Task.id == session.task_id).first()
+   584→            if task:
+   585→                task.actual_minutes = (task.actual_minutes or 0) + session.actual_minutes
+   586→
+   587→    db.commit()
+   588→    db.refresh(session)
+   589→    return session
+   590→
+   591→
+   592→# ============================================================
+   593→# MOOD
+   594→# ============================================================
+   595→@app.post(f"{settings.API_V1_PREFIX}/mood", response_model=MoodEntryOut, status_code=201)
+   596→def create_mood(
+   597→    payload: MoodEntryCreate,
+   598→    user: User = Depends(get_current_user),
+   599→    db: Session = Depends(get_db),
+   600→):
+   601→    entry = MoodEntry(
+   602→        user_id=user.id,
+   603→        mood_score=payload.mood_score,
+   604→        energy_score=payload.energy_score,
+   605→        triggers=payload.triggers,
+   606→        note=payload.note,
+   607→    )
+   608→    db.add(entry)
+   609→    # Small XP for tracking mood
+   610→    add_xp(user, 5, db)
+   611→    db.commit()
+   612→    db.refresh(entry)
+   613→    return entry
+   614→
+   615→
+   616→@app.get(f"{settings.API_V1_PREFIX}/mood", response_model=list[MoodEntryOut])
+   617→def list_mood(
+   618→    limit: int = Query(30, ge=1, le=200),
+   619→    user: User = Depends(get_current_user),
+   620→    db: Session = Depends(get_db),
+   621→):
+   622→    return db.query(MoodEntry).filter(MoodEntry.user_id == user.id).order_by(
+   623→        MoodEntry.created_at.desc()
+   624→    ).limit(limit).all()
+   625→
+   626→
+   627→# ============================================================
+   628→# ACHIEVEMENTS
+   629→# ============================================================
+   630→@app.get(f"{settings.API_V1_PREFIX}/achievements", response_model=list[AchievementOut])
+   631→def list_achievements(db: Session = Depends(get_db)):
+   632→    return db.query(Achievement).all()
+   633→
+   634→
+   635→@app.get(f"{settings.API_V1_PREFIX}/achievements/mine", response_model=list[UserAchievementOut])
+   636→def my_achievements(
+   637→    user: User = Depends(get_current_user),
+   638→    db: Session = Depends(get_db),
+   639→):
+   640→    return db.query(UserAchievement).filter(UserAchievement.user_id == user.id).all()
+   641→
+   642→
+   643→@app.post(f"{settings.API_V1_PREFIX}/achievements/evaluate")
+   644→def evaluate_now(
+   645→    user: User = Depends(get_current_user),
+   646→    db: Session = Depends(get_db),
+   647→):
+   648→    new_ach = evaluate_achievements(user, db)
+   649→    return {"newly_earned": new_ach}
+   650→
+   651→
+   652→# ============================================================
+   653→# AI
+   654→# ============================================================
+   655→@app.post(f"{settings.API_V1_PREFIX}/ai/breakdown", response_model=AIBreakdownResponse)
+   656→async def ai_breakdown(
+   657→    payload: AIBreakdownRequest,
+   658→    user: User = Depends(get_current_user),
+   659→    db: Session = Depends(get_db),
+   660→):
+   661→    result = await generate_task_breakdown(
+   662→        user, payload.task_title, payload.task_description,
+   663→        payload.estimated_minutes, db
+   664→    )
+   665→    return result
+   666→
+   667→
+   668→@app.post(f"{settings.API_V1_PREFIX}/ai/coach", response_model=AICoachResponse)
+   669→async def ai_coach(
+   670→    payload: AICoachRequest,
+   671→    user: User = Depends(get_current_user),
+   672→    db: Session = Depends(get_db),
+   673→):
+   674→    return await ai_coach_chat(user, payload.message, payload.context, db)
+   675→
+   676→
+   677→@app.post(f"{settings.API_V1_PREFIX}/ai/plan", response_model=AIPlanResponse)
+   678→async def ai_plan(
+   679→    payload: AIPlanRequest,
+   680→    user: User = Depends(get_current_user),
+   681→    db: Session = Depends(get_db),
+   682→):
+   683→    plan = await generate_personalized_plan(user, db)
+   684→    return AIPlanResponse(plan=plan, generated_at=datetime.now(timezone.utc))
+   685→
+   686→
+   687→@app.get(f"{settings.API_V1_PREFIX}/ai/interactions")
+   688→def list_ai_interactions(
+   689→    limit: int = Query(50, ge=1, le=500),
+   690→    user: User = Depends(get_current_user),
+   691→    db: Session = Depends(get_db),
+   692→):
+   693→    return db.query(AIInteraction).filter(AIInteraction.user_id == user.id).order_by(
+   694→        AIInteraction.created_at.desc()
+   695→    ).limit(limit).all()
+   696→
+   697→
+   698→# ============================================================
+   699→# DASHBOARD
+   700→# ============================================================
+   701→MOTIVATIONAL_QUOTES = [
+   702→    "You don't have to be great to start, but you have to start to be great. — Zig Ziglar",
+   703→    "The secret of getting ahead is getting started. — Mark Twain",
+   704→    "Action is the foundational key to all success. — Pablo Picasso",
+   705→    "Procrastination is the thief of time. — Edward Young",
+   706→    "You may delay, but time will not. — Benjamin Franklin",
+   707→    "A year from now you may wish you had started today. — Karen Lamb",
+   708→    "The best way to predict the future is to create it. — Peter Drucker",
+   709→    "Don't watch the clock; do what it does. Keep going. — Sam Levenson",
+   710→    "It always seems impossible until it's done. — Nelson Mandela",
+   711→    "Start where you are. Use what you have. Do what you can. — Arthur Ashe",
+   712→]
+   713→
+   714→
+   715→@app.get(f"{settings.API_V1_PREFIX}/dashboard", response_model=DashboardOut)
+   716→def dashboard(
+   717→    user: User = Depends(get_current_user),
+   718→    db: Session = Depends(get_db),
+   719→):
+   720→    # Today's tasks
+   721→    today = datetime.now(timezone.utc).date()
+   722→    today_tasks = db.query(Task).filter(
+   723→        Task.user_id == user.id,
+   724→        Task.status != TaskStatus.COMPLETED
+   725→    ).order_by(Task.priority.desc(), Task.created_at.asc()).limit(5).all()
+   726→
+   727→    # Today's focus minutes
+   728→    today_focus = db.query(func.coalesce(func.sum(FocusSession.actual_minutes), 0)).filter(
+   729→        FocusSession.user_id == user.id,
+   730→        FocusSession.status == SessionStatus.COMPLETED,
+   731→        func.date(FocusSession.started_at) == today
+   732→    ).scalar() or 0
+   733→
+   734→    # Total focus minutes
+   735→    total_focus = db.query(func.coalesce(func.sum(FocusSession.actual_minutes), 0)).filter(
+   736→        FocusSession.user_id == user.id,
+   737→        FocusSession.status == SessionStatus.COMPLETED
+   738→    ).scalar() or 0
+   739→
+   740→    # Weekly focus minutes (last 7 days)
+   741→    weekly = []
+   742→    for i in range(6, -1, -1):
+   743→        d = today - timedelta(days=i)
+   744→        mins = db.query(func.coalesce(func.sum(FocusSession.actual_minutes), 0)).filter(
+   745→            FocusSession.user_id == user.id,
+   746→            FocusSession.status == SessionStatus.COMPLETED,
+   747→            func.date(FocusSession.started_at) == d
+   748→        ).scalar() or 0
+   749→        weekly.append({"date": d.isoformat(), "minutes": mins})
+   750→
+   751→    # Achievements
+   752→    earned_ids = {ua.achievement_id for ua in
+   753→                  db.query(UserAchievement).filter(UserAchievement.user_id == user.id).all()}
+   754→    earned = db.query(UserAchievement).filter(UserAchievement.user_id == user.id).order_by(
+   755→        UserAchievement.earned_at.desc()
+   756→    ).limit(5).all()
+   757→    pending = db.query(Achievement).filter(~Achievement.id.in_(earned_ids)).limit(5).all() if earned_ids else db.query(Achievement).limit(5).all()
+   758→
+   759→    # Current mood
+   760→    current_mood = db.query(MoodEntry).filter(MoodEntry.user_id == user.id).order_by(
+   761→        MoodEntry.created_at.desc()
+   762→    ).first()
+   763→
+   764→    return DashboardOut(
+   765→        user=user,
+   766→        today_tasks=today_tasks,
+   767→        today_focus_minutes=today_focus,
+   768→        total_focus_minutes=total_focus,
+   769→        weekly_focus_minutes=weekly,
+   770→        recent_achievements=earned,
+   771→        pending_achievements=pending,
+   772→        current_mood=current_mood,
+   773→        streak_data={
+   774→            "current": user.current_streak,
+   775→            "longest": user.longest_streak,
+   776→            "last_active": user.last_active_date,
+   777→        },
+   778→        motivational_quote=random.choice(MOTIVATIONAL_QUOTES),
+   779→    )
+   780→
+   781→
+   782→# ============================================================
+   783→# STATS (extra endpoint for charts)
+   784→# ============================================================
+   785→@app.get(f"{settings.API_V1_PREFIX}/stats/weekly")
+   786→def weekly_stats(
+   787→    user: User = Depends(get_current_user),
+   788→    db: Session = Depends(get_db),
+   789→):
+   790→    today = datetime.now(timezone.utc).date()
+   791→    days = []
+   792→    for i in range(6, -1, -1):
+   793→        d = today - timedelta(days=i)
+   794→        focus_mins = db.query(func.coalesce(func.sum(FocusSession.actual_minutes), 0)).filter(
+   795→            FocusSession.user_id == user.id,
+   796→            FocusSession.status == SessionStatus.COMPLETED,
+   797→            func.date(FocusSession.started_at) == d
+   798→        ).scalar() or 0
+   799→        tasks_done = db.query(func.count(Task.id)).filter(
+   800→            Task.user_id == user.id,
+   801→            Task.status == TaskStatus.COMPLETED,
+   802→            func.date(Task.completed_at) == d
+   803→        ).scalar() or 0
+   804→        mood = db.query(MoodEntry).filter(
+   805→            MoodEntry.user_id == user.id,
+   806→            func.date(MoodEntry.created_at) == d
+   807→        ).order_by(MoodEntry.created_at.desc()).first()
+   808→        days.append({
+   809→            "date": d.isoformat(),
+   810→            "weekday": d.strftime("%a"),
+   811→            "focus_minutes": focus_mins,
+   812→            "tasks_completed": tasks_done,
+   813→            "mood": mood.mood_score if mood else None,
+   814→            "energy": mood.energy_score if mood else None,
+   815→        })
+   816→    return {"days": days, "user_xp": user.xp, "user_level": user.level}
+   817→
+   818→
+   819→# ============================================================
+   820→# UNIQUE BAM! FEATURE — POWER CHAIN (habit stacking)
+   821→# ============================================================
+   822→@app.post(f"{settings.API_V1_PREFIX}/chains", response_model=ChainOut, status_code=201)
+   823→def create_chain(
+   824→    payload: ChainCreate,
+   825→    user: User = Depends(get_current_user),
+   826→    db: Session = Depends(get_db),
+   827→):
+   828→    """Create a new power chain with linked habits."""
+   829→    if not payload.links or len(payload.links) < 2:
+   830→        raise HTTPException(400, "A power chain needs at least 2 links (habits).")
+   831→    if len(payload.links) > 10:
+   832→        raise HTTPException(400, "Maximum 10 links per chain.")
+   833→
+   834→    chain = PowerChain(
+   835→        user_id=user.id,
+   836→        title=payload.title,
+   837→        description=payload.description,
+   838→        color=payload.color,
+   839→        action_word=random.choice(["CHAIN!", "LINK!", "POWER!", "CONNECT!"]),
+   840→    )
+   841→    db.add(chain)
+   842→    db.flush()
+   843→
+   844→    for i, link_data in enumerate(payload.links):
+   845→        link = ChainLink(
+   846→            chain_id=chain.id,
+   847→            user_id=user.id,
+   848→            title=link_data.title,
+   849→            position=i,
+   850→            is_required=link_data.is_required,
+   851→            icon_code=link_data.icon_code,
+   852→            color=link_data.color,
+   853→        )
+   854→        db.add(link)
+   855→
+   856→    db.commit()
+   857→    db.refresh(chain)
+   858→    return chain
+   859→
+   860→
+   861→@app.get(f"{settings.API_V1_PREFIX}/chains", response_model=list[ChainOut])
+   862→def list_chains(
+   863→    user: User = Depends(get_current_user),
+   864→    db: Session = Depends(get_db),
+   865→):
+   866→    return db.query(PowerChain).filter(PowerChain.user_id == user.id).order_by(
+   867→        PowerChain.created_at.desc()
+   868→    ).all()
+   869→
+   870→
+   871→@app.get(f"{settings.API_V1_PREFIX}/chains/{{chain_id}}", response_model=ChainOut)
+   872→def get_chain(
+   873→    chain_id: int,
+   874→    user: User = Depends(get_current_user),
+   875→    db: Session = Depends(get_db),
+   876→):
+   877→    chain = db.query(PowerChain).filter(
+   878→        PowerChain.id == chain_id, PowerChain.user_id == user.id
+   879→    ).first()
+   880→    if not chain:
+   881→        raise HTTPException(404, "Chain not found")
+   882→    return chain
+   883→
+   884→
+   885→@app.delete(f"{settings.API_V1_PREFIX}/chains/{{chain_id}}", status_code=204)
+   886→def delete_chain(
+   887→    chain_id: int,
+   888→    user: User = Depends(get_current_user),
+   889→    db: Session = Depends(get_db),
+   890→):
+   891→    chain = db.query(PowerChain).filter(
+   892→        PowerChain.id == chain_id, PowerChain.user_id == user.id
+   893→    ).first()
+   894→    if not chain:
+   895→        raise HTTPException(404, "Chain not found")
+   896→    db.delete(chain)
+   897→    db.commit()
+   898→
+   899→
+   900→@app.post(f"{settings.API_V1_PREFIX}/chains/{{chain_id}}/links/{{link_id}}/toggle",
+   901→          response_model=ChainLinkToggleOut)
+   902→def toggle_link(
+   903→    chain_id: int,
+   904→    link_id: int,
+   905→    user: User = Depends(get_current_user),
+   906→    db: Session = Depends(get_db),
+   907→):
+   908→    """Toggle a chain link's completion for today.
+   909→
+   910→    If all required links become completed, the chain day is incremented and the user
+   911→    earns XP + a chance for a shield. If a previously-completed link is un-toggled
+   912→    after the day was marked complete, the chain breaks (with SNAP!).
+   913→    """
+   914→    chain = db.query(PowerChain).filter(
+   915→        PowerChain.id == chain_id, PowerChain.user_id == user.id
+   916→    ).first()
+   917→    if not chain:
+   918→        raise HTTPException(404, "Chain not found")
+   919→
+   920→    link = db.query(ChainLink).filter(
+   921→        ChainLink.id == link_id, ChainLink.chain_id == chain_id
+   922→    ).first()
+   923→    if not link:
+   924→        raise HTTPException(404, "Link not found")
+   925→
+   926→    today = datetime.now(timezone.utc).date().isoformat()
+   927→    was_chain_complete_today = chain.last_completed_date == today
+   928→    new_state = not link.completed_today
+   929→    link.completed_today = new_state
+   930→
+   931→    xp_earned = 0
+   932→    new_shield = None
+   933→    chain_broken = False
+   934→
+   935→    if new_state:
+   936→        # Marking complete
+   937→        link.last_completed_date = today
+   938→        link.total_completions = (link.total_completions or 0) + 1
+   939→        xp_earned = 15
+   940→        # Check if all required links are now complete
+   941→        required_links = [l for l in chain.links if l.is_required]
+   942→        all_complete = all(l.completed_today for l in required_links)
+   943→        if all_complete and not was_chain_complete_today:
+   944→            # Chain day complete!
+   945→            chain.current_chain_days = (chain.current_chain_days or 0) + 1
+   946→            chain.total_completions = (chain.total_completions or 0) + 1
+   947→            chain.last_completed_date = today
+   948→            if chain.current_chain_days > (chain.longest_chain_days or 0):
+   949→                chain.longest_chain_days = chain.current_chain_days
+   950→            xp_earned += 50
+   951→            # Bonus: every 3-day chain = award a shield
+   952→            if chain.current_chain_days % 3 == 0:
+   953→                shield_color = "gold" if chain.current_chain_days >= 9 else "blue"
+   954→                rarity = "rare" if chain.current_chain_days >= 9 else "common"
+   955→                new_shield = award_shield(
+   956→                    user, "power_chain",
+   957→                    f"Chain '{chain.title}' reached {chain.current_chain_days} days",
+   958→                    db, color=shield_color, rarity=rarity
+   959→                )
+   960→                new_shield = {
+   961→                    "id": new_shield.id,
+   962→                    "shield_color": new_shield.shield_color,
+   963→                    "rarity": new_shield.rarity,
+   964→                    "source": "power_chain",
+   965→                }
+   966→    else:
+   967→        # Un-toggling — if chain was complete today, break it
+   968→        link.last_completed_date = None
+   969→        if was_chain_complete_today:
+   970→            chain_broken = True
+   971→            chain.current_chain_days = 0
+   972→            chain.broken_at = datetime.now(timezone.utc)
+   973→            chain.is_active = False
+   974→
+   975→    add_xp(user, xp_earned, db)
+   976→    db.commit()
+   977→    db.refresh(link)
+   978→    db.refresh(chain)
+   979→
+   980→    return ChainLinkToggleOut(
+   981→        link=link,
+   982→        chain_completed_today=chain.last_completed_date == today,
+   983→        chain_broken=chain_broken,
+   984→        xp_earned=xp_earned,
+   985→        new_shield_earned=new_shield,
+   986→    )
+   987→
+   988→
+   989→@app.post(f"{settings.API_V1_PREFIX}/chains/{{chain_id}}/restart", response_model=ChainOut)
+   990→def restart_chain(
+   991→    chain_id: int,
+   992→    user: User = Depends(get_current_user),
+   993→    db: Session = Depends(get_db),
+   994→):
+   995→    """Restart a broken chain — resets to active, clears links for today."""
+   996→    chain = db.query(PowerChain).filter(
+   997→        PowerChain.id == chain_id, PowerChain.user_id == user.id
+   998→    ).first()
+   999→    if not chain:
+  1000→        raise HTTPException(404, "Chain not found")
+  1001→
+  1002→    chain.is_active = True
+  1003→    chain.broken_at = None
+  1004→    chain.current_chain_days = 0
+  1005→    for link in chain.links:
+  1006→        link.completed_today = False
+  1007→        link.last_completed_date = None
+  1008→    db.commit()
+  1009→    db.refresh(chain)
+  1010→    return chain
+  1011→
+  1012→
+  1013→# ============================================================
+  1014→# UNIQUE BAM! FEATURE — STREAK SHIELD (recovery mechanic)
+  1015→# ============================================================
+  1016→@app.get(f"{settings.API_V1_PREFIX}/shields", response_model=list[ShieldOut])
+  1017→def list_shields(
+  1018→    user: User = Depends(get_current_user),
+  1019→    db: Session = Depends(get_db),
+  1020→):
+  1021→    return db.query(StreakShield).filter(
+  1022→        StreakShield.user_id == user.id
+  1023→    ).order_by(StreakShield.earned_at.desc()).all()
+  1024→
+  1025→
+  1026→@app.get(f"{settings.API_V1_PREFIX}/shields/reserve")
+  1027→def shield_reserve(
+  1028→    user: User = Depends(get_current_user),
+  1029→    db: Session = Depends(get_db),
+  1030→):
+  1031→    count = db.query(func.count(StreakShield.id)).filter(
+  1032→        StreakShield.user_id == user.id,
+  1033→        StreakShield.is_spent == False
+  1034→    ).scalar() or 0
+  1035→    return {"reserve": count}
+  1036→
+  1037→
+  1038→@app.post(f"{settings.API_V1_PREFIX}/shields/spend", response_model=ShieldSpendResponse)
+  1039→def spend_shield(
+  1040→    payload: ShieldSpendRequest,
+  1041→    user: User = Depends(get_current_user),
+  1042→    db: Session = Depends(get_db),
+  1043→):
+  1044→    """Spend a shield to protect a missed day (target_date must be yesterday or older)."""
+  1045→    try:
+  1046→        target = datetime.strptime(payload.target_date, "%Y-%m-%d").date()
+  1047→    except ValueError:
+  1048→        raise HTTPException(400, "target_date must be YYYY-MM-DD")
+  1049→
+  1050→    today = datetime.now(timezone.utc).date()
+  1051→    if target >= today:
+  1052→        raise HTTPException(400, "Can only protect past days (yesterday or earlier).")
+  1053→
+  1054→    # Check if user already has a shield spent for this date
+  1055→    existing = db.query(StreakShield).filter(
+  1056→        StreakShield.user_id == user.id,
+  1057→        StreakShield.spent_for_date == payload.target_date
+  1058→    ).first()
+  1059→    if existing:
+  1060→        return ShieldSpendResponse(
+  1061→            success=False, message="This date is already protected.",
+  1062→            streak_protected=True
+  1063→        )
+  1064→
+  1065→    # Find an unspent shield
+  1066→    shield = db.query(StreakShield).filter(
+  1067→        StreakShield.user_id == user.id,
+  1068→        StreakShield.is_spent == False
+  1069→    ).order_by(StreakShield.earned_at.asc()).first()
+  1070→    if not shield:
+  1071→        raise HTTPException(400, "No shields in reserve! Earn more by completing power chains or deep work sessions.")
+  1072→
+  1073→    shield.is_spent = True
+  1074→    shield.spent_at = datetime.now(timezone.utc)
+  1075→    shield.spent_for_date = payload.target_date
+  1076→
+  1077→    # Update streak — pretend last_active_date is today so streak doesn't break
+  1078→    user.last_active_date = today.isoformat()
+  1079→    if user.current_streak == 0:
+  1080→        user.current_streak = 1
+  1081→
+  1082→    db.commit()
+  1083→    db.refresh(shield)
+  1084→    return ShieldSpendResponse(
+  1085→        success=True, shield=shield,
+  1086→        message=f"Shield spent! {payload.target_date} is now protected. Your streak is safe.",
+  1087→        streak_protected=True
+  1088→    )
+  1089→
+  1090→
+  1091→# ============================================================
+  1092→# UNIQUE BAM! FEATURE — BREATHE! sessions
+  1093→# ============================================================
+  1094→@app.post(f"{settings.API_V1_PREFIX}/breathe", response_model=BreatheSessionOut, status_code=201)
+  1095→def create_breathe_session(
+  1096→    payload: BreatheSessionCreate,
+  1097→    user: User = Depends(get_current_user),
+  1098→    db: Session = Depends(get_db),
+  1099→):
+  1100→    """Log a breathing exercise session. Awards XP based on cycles + duration."""
+  1101→    # XP formula: 5 base + 3 per cycle + 1 per 30s
+  1102→    xp = 5 + (payload.cycles_completed * 3) + (payload.duration_seconds // 30)
+  1103→    session = BreatheSession(
+  1104→        user_id=user.id,
+  1105→        technique=payload.technique,
+  1106→        cycles_completed=payload.cycles_completed,
+  1107→        duration_seconds=payload.duration_seconds,
+  1108→        calmness_before=payload.calmness_before,
+  1109→        calmness_after=payload.calmness_after,
+  1110→        xp_earned=xp,
+  1111→    )
+  1112→    db.add(session)
+  1113→    add_xp(user, xp, db)
+  1114→
+  1115→    # Bonus: 5th breathe session of the week = award a shield
+  1116→    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+  1117→    week_count = db.query(func.count(BreatheSession.id)).filter(
+  1118→        BreatheSession.user_id == user.id,
+  1119→        BreatheSession.created_at >= week_ago
+  1120→    ).scalar() or 0
+  1121→    if (week_count + 1) % 5 == 0:
+  1122→        award_shield(user, "breathe_milestone",
+  1123→                     f"{week_count + 1} breathing sessions this week",
+  1124→                     db, color="green", rarity="rare")
+  1125→
+  1126→    db.commit()
+  1127→    db.refresh(session)
+  1128→    return session
+  1129→
+  1130→
+  1131→@app.get(f"{settings.API_V1_PREFIX}/breathe", response_model=list[BreatheSessionOut])
+  1132→def list_breathe_sessions(
+  1133→    limit: int = Query(30, ge=1, le=200),
+  1134→    user: User = Depends(get_current_user),
+  1135→    db: Session = Depends(get_db),
+  1136→):
+  1137→    return db.query(BreatheSession).filter(
+  1138→        BreatheSession.user_id == user.id
+  1139→    ).order_by(BreatheSession.created_at.desc()).limit(limit).all()
+  1140→
+  1141→
+  1142→# ============================================================
+  1143→# UNIQUE BAM! KPIs — real-time computed
+  1144→# ============================================================
+  1145→@app.get(f"{settings.API_V1_PREFIX}/kpis", response_model=KPIOut)
+  1146→def get_kpis(
+  1147→    user: User = Depends(get_current_user),
+  1148→    db: Session = Depends(get_db),
+  1149→):
+  1150→    """Get real-time computed KPIs for the current user.
+  1151→
+  1152→    Returns BAM!'s unique metrics:
+  1153→    - Momentum Index (MI): streak × focus × completion
+  1154→    - Avoidance Resistance Score (ARS): how fast you act on tasks
+  1155→    - Power Level (PL): energy × completion ratio
+  1156→    - Chain Strength, Shield Reserve, Calm Count Week
+  1157→    """
+  1158→    kpis = compute_all_kpis(user, db)
+  1159→    return KPIOut(**kpis)
+  1160→
+  1161→
+  1162→@app.get(f"{settings.API_V1_PREFIX}/kpis/history")
+  1163→def kpi_history(
+  1164→    days: int = Query(14, ge=1, le=90),
+  1165→    user: User = Depends(get_current_user),
+  1166→    db: Session = Depends(get_db),
+  1167→):
+  1168→    """Get historical KPI snapshots for trend visualization."""
+  1169→    cutoff = datetime.now(timezone.utc).date() - timedelta(days=days)
+  1170→    snapshots = db.query(KPISnapshot).filter(
+  1171→        KPISnapshot.user_id == user.id,
+  1172→        KPISnapshot.snapshot_date >= cutoff.isoformat()
+  1173→    ).order_by(KPISnapshot.snapshot_date.asc()).all()
+  1174→    return {
+  1175→        "days": [
+  1176→            {
+  1177→                "date": s.snapshot_date,
+  1178→                "momentum_index": s.momentum_index,
+  1179→                "avoidance_resistance": s.avoidance_resistance,
+  1180→                "power_level": s.power_level,
+  1181→                "chain_strength": s.chain_strength,
+  1182→                "shield_reserve": s.shield_reserve,
+  1183→                "calm_count_week": s.calm_count_week,
+  1184→                "focus_minutes": s.focus_minutes,
+  1185→                "tasks_completed": s.tasks_completed,
+  1186→            }
+  1187→            for s in snapshots
+  1188→        ]
+  1189→    }
+  1190→
+  1191→
+  1192→if __name__ == "__main__":
+  1193→    import uvicorn
+  1194→    uvicorn.run(app, host=settings.HOST, port=settings.PORT)
+  1195→

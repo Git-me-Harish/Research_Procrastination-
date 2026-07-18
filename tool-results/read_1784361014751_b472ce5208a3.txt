@@ -1,0 +1,657 @@
+     1→"use client";
+     2→
+     3→import { useEffect, useState, useCallback } from "react";
+     4→import { api, type ProfileSummary, type UserUpdate } from "@/lib/api";
+     5→import { useBamStore } from "@/lib/store";
+     6→import {
+     7→  ComicPanel, ComicButton, ActionWord, SpeechBubble, ComicBadge, BurstRays,
+     8→} from "@/components/comic/comic-ui";
+     9→import { playSound } from "@/lib/sounds";
+    10→import { triggerBang } from "@/components/comic/bang-effect";
+    11→import type { View } from "./bam-app";
+    12→import {
+    13→  IconUser, IconStar, IconBolt, IconFlame, IconTrophy, IconClock, IconTask,
+    14→  IconFocus, IconBreathe, IconChain, IconShield, IconMood, IconCoach,
+    15→  IconEdit, IconCheck, IconDownload, IconRefresh, IconSoundOn, IconSoundOff,
+    16→  IconCalendar, IconChart, IconSparkle, IconEnergy,
+    17→} from "@/components/comic/comic-icons";
+    18→
+    19→interface ProfileViewProps {
+    20→  setView: (v: View) => void;
+    21→}
+    22→
+    23→export function ProfileView({ setView }: ProfileViewProps) {
+    24→  const { user, setUser, soundOn, toggleSound, refreshUser } = useBamStore();
+    25→  const [summary, setSummary] = useState<ProfileSummary | null>(null);
+    26→  const [loading, setLoading] = useState(true);
+    27→  const [editingName, setEditingName] = useState(false);
+    28→  const [nameDraft, setNameDraft] = useState("");
+    29→  const [savingName, setSavingName] = useState(false);
+    30→  const [kpiHistory, setKpiHistory] = useState<any[]>([]);
+    31→  const [retakeConfirm, setRetakeConfirm] = useState(false);
+    32→
+    33→  const load = useCallback(() => {
+    34→    setLoading(true);
+    35→    Promise.all([
+    36→      api.profileSummary(),
+    37→      api.kpiHistory(14).catch(() => ({ days: [] })),
+    38→    ])
+    39→      .then(([s, hist]) => {
+    40→        setSummary(s);
+    41→        setKpiHistory(hist.days || []);
+    42→      })
+    43→      .finally(() => setLoading(false));
+    44→  }, []);
+    45→
+    46→  useEffect(() => {
+    47→    load();
+    48→  }, [load]);
+    49→
+    50→  const handleSaveName = async () => {
+    51→    const trimmed = nameDraft.trim();
+    52→    if (!trimmed || trimmed === user?.display_name) {
+    53→      setEditingName(false);
+    54→      return;
+    55→    }
+    56→    setSavingName(true);
+    57→    try {
+    58→      const updated = await api.updateMe({ display_name: trimmed });
+    59→      setUser(updated);
+    60→      setSummary(s => s ? { ...s, user: updated, procrastination_type: updated.procrastination_type } : s);
+    61→      playSound("bam");
+    62→      triggerBang({ variant: "bam", word: "SAVED!", x: 50, y: 35, size: 160 });
+    63→      setEditingName(false);
+    64→    } catch (e: any) {
+    65→      playSound("error");
+    66→      alert("Failed to save name: " + e.message);
+    67→    } finally {
+    68→      setSavingName(false);
+    69→    }
+    70→  };
+    71→
+    72→  const handleToggleSound = async () => {
+    73→    // Optimistic toggle via store (already works) but also persist to server
+    74→    toggleSound();
+    75→    try {
+    76→      await api.updateMe({ sound_enabled: !soundOn });
+    77→      playSound("pop");
+    78→    } catch {}
+    79→  };
+    80→
+    81→  const handleExportData = async () => {
+    82→    if (!summary) return;
+    83→    playSound("boom");
+    84→    triggerBang({ variant: "boom", word: "EXPORTED!", x: 50, y: 40, size: 180 });
+    85→    const blob = new Blob([JSON.stringify({
+    86→      exported_at: new Date().toISOString(),
+    87→      user: summary.user,
+    88→      level_progress: {
+    89→        level: summary.level,
+    90→        xp: summary.xp,
+    91→        xp_into_level: summary.xp_into_level,
+    92→        xp_for_next_level: summary.xp_for_next_level,
+    93→        xp_to_next_level: summary.xp_to_next_level,
+    94→        next_level: summary.next_level,
+    95→        progress_pct: summary.progress_pct,
+    96→      },
+    97→      lifetime_totals: {
+    98→        total_tasks: summary.total_tasks,
+    99→        tasks_completed: summary.tasks_completed,
+   100→        tasks_pending: summary.tasks_pending,
+   101→        total_focus_minutes: summary.total_focus_minutes,
+   102→        total_focus_sessions: summary.total_focus_sessions,
+   103→        total_breathe_sessions: summary.total_breathe_sessions,
+   104→        total_breathe_minutes: summary.total_breathe_minutes,
+   105→        total_chains: summary.total_chains,
+   106→        total_chain_completions: summary.total_chain_completions,
+   107→        longest_chain: summary.longest_chain,
+   108→        total_shields_earned: summary.total_shields_earned,
+   109→        total_shields_spent: summary.total_shields_spent,
+   110→        achievements_earned: summary.achievements_earned,
+   111→        achievements_total: summary.achievements_total,
+   112→        mood_entries: summary.mood_entries,
+   113→        ai_interactions: summary.ai_interactions,
+   114→        days_active: summary.days_active,
+   115→        member_since: summary.member_since,
+   116→      },
+   117→      procrastination_type: summary.procrastination_type,
+   118→      recent_activity: summary.recent_activity,
+   119→      kpi_history_14_days: kpiHistory,
+   120→    }, null, 2)], { type: "application/json" });
+   121→    const url = URL.createObjectURL(blob);
+   122→    const a = document.createElement("a");
+   123→    a.href = url;
+   124→    a.download = `bam-profile-${user?.username || "user"}-${new Date().toISOString().slice(0,10)}.json`;
+   125→    document.body.appendChild(a);
+   126→    a.click();
+   127→    document.body.removeChild(a);
+   128→    URL.revokeObjectURL(url);
+   129→  };
+   130→
+   131→  const handleRetakeQuiz = async () => {
+   132→    try {
+   133→      await api.retakeOnboarding();
+   134→      playSound("whoosh");
+   135→      triggerBang({ variant: "kapow", word: "RETAKE!", x: 50, y: 35, size: 180 });
+   136→      // Refresh user — onboarding_completed_at will be null, app will route to OnboardingFlow
+   137→      await refreshUser();
+   138→    } catch (e: any) {
+   139→      playSound("error");
+   140→      alert("Failed: " + e.message);
+   141→    }
+   142→  };
+   143→
+   144→  if (loading || !summary) {
+   145→    return (
+   146→      <div className="text-center py-20">
+   147→        <ActionWord word="LOADING PROFILE..." size="lg" />
+   148→        <p className="font-comic-neue font-bold mt-3">Summing up your hero journey...</p>
+   149→      </div>
+   150→    );
+   151→  }
+   152→
+   153→  const memberSinceDate = new Date(summary.member_since);
+   154→  const memberSinceStr = memberSinceDate.toLocaleDateString("en-US", {
+   155→    year: "numeric", month: "short", day: "numeric",
+   156→  });
+   157→  const initials = (user?.display_name || user?.username || "H")[0].toUpperCase();
+   158→
+   159→  return (
+   160→    <div className="space-y-6">
+   161→      {/* ===== HERO PROFILE CARD ===== */}
+   162→      <div className="relative overflow-hidden">
+   163→        <BurstRays animate className="opacity-15" />
+   164→        <ComicPanel color="blue" tilt="2l" burst className="relative">
+   165→          <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
+   166→            {/* Big avatar */}
+   167→            <div className="flex-shrink-0 relative">
+   168→              <div
+   169→                className="w-28 h-28 flex items-center justify-center border-4 border-black rounded-2xl shadow-[6px_6px_0_#0A0A0A] comic-textured-yellow"
+   170→                style={{ transform: "rotate(-3deg)" }}
+   171→              >
+   172→                <span
+   173→                  className="font-bangers text-6xl text-[#FF4757]"
+   174→                  style={{
+   175→                    WebkitTextStroke: "2px #0A0A0A",
+   176→                    textShadow: "3px 3px 0 #0A0A0A",
+   177→                  }}
+   178→                >
+   179→                  {initials}
+   180→                </span>
+   181→              </div>
+   182→              {/* Level badge floating */}
+   183→              <div className="absolute -bottom-3 -right-3 bg-[#FFD23F] border-2 border-black rounded-full px-3 py-1 shadow-[2px_2px_0_#0A0A0A] flex items-center gap-1">
+   184→                <IconStar size={18} />
+   185→                <span className="font-bangers text-lg">LV {summary.level}</span>
+   186→              </div>
+   187→            </div>
+   188→
+   189→            {/* Name + email + member since */}
+   190→            <div className="flex-1 min-w-0">
+   191→              {editingName ? (
+   192→                <div className="flex items-center gap-2 flex-wrap">
+   193→                  <input
+   194→                    autoFocus
+   195→                    value={nameDraft}
+   196→                    onChange={(e) => setNameDraft(e.target.value)}
+   197→                    onKeyDown={(e) => {
+   198→                      if (e.key === "Enter") handleSaveName();
+   199→                      if (e.key === "Escape") setEditingName(false);
+   200→                    }}
+   201→                    maxLength={120}
+   202→                    className="font-bangers text-3xl md:text-4xl bg-white border-3 border-black rounded-lg px-3 py-1 text-[#FF4757] outline-none focus:ring-4 focus:ring-[#FFD23F]/60"
+   203→                    style={{ borderWidth: "3px", WebkitTextStroke: "1px #0A0A0A" }}
+   204→                  />
+   205→                  <button
+   206→                    onClick={handleSaveName}
+   207→                    disabled={savingName}
+   208→                    className="w-10 h-10 flex items-center justify-center bg-[#06D6A0] text-white border-3 border-black rounded-lg shadow-[2px_2px_0_#0A0A0A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_#0A0A0A] transition-all disabled:opacity-50"
+   209→                    style={{ borderWidth: "3px" }}
+   210→                    title="Save"
+   211→                  >
+   212→                    <IconCheck size={22} />
+   213→                  </button>
+   214→                  <button
+   215→                    onClick={() => setEditingName(false)}
+   216→                    className="w-10 h-10 flex items-center justify-center bg-[#FF4757] text-white border-3 border-black rounded-lg shadow-[2px_2px_0_#0A0A0A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_#0A0A0A] transition-all"
+   217→                    style={{ borderWidth: "3px" }}
+   218→                    title="Cancel"
+   219→                  >
+   220→                    <IconRefresh size={20} />
+   221→                  </button>
+   222→                </div>
+   223→              ) : (
+   224→                <div className="flex items-center gap-2 flex-wrap">
+   225→                  <h1
+   226→                    className="font-bangers text-3xl md:text-4xl text-[#FFD23F]"
+   227→                    style={{
+   228→                      WebkitTextStroke: "1.5px #0A0A0A",
+   229→                      textShadow: "3px 3px 0 #0A0A0A",
+   230→                    }}
+   231→                  >
+   232→                    {user?.display_name || user?.username}
+   233→                  </h1>
+   234→                  <button
+   235→                    onClick={() => {
+   236→                      setNameDraft(user?.display_name || user?.username || "");
+   237→                      setEditingName(true);
+   238→                      playSound("pop");
+   239→                    }}
+   240→                    className="w-9 h-9 flex items-center justify-center bg-white border-2 border-black rounded-lg shadow-[2px_2px_0_#0A0A0A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_#0A0A0A] transition-all"
+   241→                    title="Edit display name"
+   242→                  >
+   243→                    <IconEdit size={18} />
+   244→                  </button>
+   245→                </div>
+   246→              )}
+   247→
+   248→              <div className="font-comic-neue font-bold mt-1 flex items-center gap-2 flex-wrap">
+   249→                <span className="bg-white/30 border-2 border-black rounded-full px-3 py-0.5 text-sm">
+   250→                  @{user?.username}
+   251→                </span>
+   252→                <span className="bg-white/30 border-2 border-black rounded-full px-3 py-0.5 text-sm flex items-center gap-1">
+   253→                  <IconUser size={14} /> {user?.email}
+   254→                </span>
+   255→                <span className="bg-[#FFD23F] text-black border-2 border-black rounded-full px-3 py-0.5 text-sm flex items-center gap-1">
+   256→                  <IconCalendar size={14} /> Joined {memberSinceStr}
+   257→                </span>
+   258→              </div>
+   259→
+   260→              {/* Procrastination type chip */}
+   261→              <div className="mt-2">
+   262→                <ComicBadge color="pink">
+   263→                  <span className="font-bangers tracking-wide">
+   264→                    TYPE: {summary.procrastination_type.replace("_", " ").toUpperCase()}
+   265→                  </span>
+   266→                </ComicBadge>
+   267→              </div>
+   268→            </div>
+   269→
+   270→            {/* Action buttons */}
+   271→            <div className="flex flex-col gap-2 flex-shrink-0">
+   272→              <ComicButton color="yellow" sound="click" size="sm" onClick={handleExportData}>
+   273→                <span className="flex items-center gap-1">
+   274→                  <IconDownload size={18} /> Export
+   275→                </span>
+   276→              </ComicButton>
+   277→              <ComicButton color="green" sound="whoosh" size="sm" onClick={() => setRetakeConfirm(true)}>
+   278→                <span className="flex items-center gap-1">
+   279→                  <IconRefresh size={18} /> Re-take Quiz
+   280→                </span>
+   281→              </ComicButton>
+   282→            </div>
+   283→          </div>
+   284→        </ComicPanel>
+   285→      </div>
+   286→
+   287→      {/* ===== LEVEL PROGRESS BAR ===== */}
+   288→      <ComicPanel color="yellow">
+   289→        <div className="flex items-center justify-between mb-2">
+   290→          <h2 className="font-bangers text-2xl flex items-center gap-2">
+   291→            <IconStar size={26} /> LEVEL {summary.level} PROGRESS
+   292→          </h2>
+   293→          <div className="font-bangers text-xl">
+   294→            {summary.xp} / {summary.xp + summary.xp_to_next_level} XP
+   295→          </div>
+   296→        </div>
+   297→        <div className="relative h-8 bg-white border-3 border-black rounded-full overflow-hidden shadow-[3px_3px_0_#0A0A0A]" style={{ borderWidth: "3px" }}>
+   298→          <div
+   299→            className="absolute inset-y-0 left-0 comic-textured-red transition-all"
+   300→            style={{ width: `${Math.max(2, summary.progress_pct)}%` }}
+   301→          />
+   302→          <div className="absolute inset-0 flex items-center justify-center font-bangers text-lg text-white" style={{ textShadow: "2px 2px 0 #0A0A0A" }}>
+   303→            {summary.progress_pct.toFixed(0)}% to LV {summary.next_level}
+   304→          </div>
+   305→        </div>
+   306→        <p className="font-comic-neue text-sm font-bold mt-2 text-center">
+   307→          {summary.xp_to_next_level} XP to reach Level {summary.next_level} — keep stacking POW!
+   308→        </p>
+   309→      </ComicPanel>
+   310→
+   311→      {/* ===== LIFETIME STATS GRID ===== */}
+   312→      <div>
+   313→        <h2 className="font-bangers text-3xl mb-3 flex items-center gap-2" style={{
+   314→          WebkitTextStroke: "1px #0A0A0A",
+   315→          textShadow: "2px 2px 0 #0A0A0A",
+   316→        }}>
+   317→          <IconChart size={32} /> LIFETIME STATS
+   318→        </h2>
+   319→        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+   320→          <StatCard icon={<IconTask size={28} />} label="Tasks Done" value={summary.tasks_completed} sub={`${summary.tasks_pending} pending`} color="#FF4757" tilt="3l" />
+   321→          <StatCard icon={<IconFocus size={28} />} label="Focus Minutes" value={summary.total_focus_minutes} sub={`${summary.total_focus_sessions} sessions`} color="#4361EE" tilt="3r" />
+   322→          <StatCard icon={<IconBreathe size={28} />} label="Breathe Sessions" value={summary.total_breathe_sessions} sub={`${summary.total_breathe_minutes}m total`} color="#06D6A0" tilt="3l" />
+   323→          <StatCard icon={<IconChain size={28} />} label="Chains Built" value={summary.total_chains} sub={`${summary.longest_chain}d best`} color="#FFD23F" tilt="3r" />
+   324→          <StatCard icon={<IconShield size={28} />} label="Shields Earned" value={summary.total_shields_earned} sub={`${summary.total_shields_spent} spent`} color="#9B5DE5" tilt="3l" />
+   325→          <StatCard icon={<IconTrophy size={28} />} label="Trophies" value={`${summary.achievements_earned}/${summary.achievements_total}`} sub="unlocked" color="#FF6B35" tilt="3r" />
+   326→          <StatCard icon={<IconFlame size={28} />} label="Longest Streak" value={`${user?.longest_streak || 0}d`} sub={`${user?.current_streak || 0}d now`} color="#FF4757" tilt="3l" />
+   327→          <StatCard icon={<IconCalendar size={28} />} label="Days Active" value={summary.days_active} sub="distinct days" color="#4361EE" tilt="3r" />
+   328→        </div>
+   329→      </div>
+   330→
+   331→      {/* ===== 14-DAY KPI TREND CHART ===== */}
+   332→      {kpiHistory.length > 1 && (
+   333→        <ComicPanel color="white">
+   334→          <h2 className="font-bangers text-2xl mb-3 flex items-center gap-2">
+   335→            <IconChart size={26} /> 14-DAY MOMENTUM TREND
+   336→          </h2>
+   337→          <KPITrendChart history={kpiHistory} />
+   338→        </ComicPanel>
+   339→      )}
+   340→
+   341→      {/* ===== PROCRASTINATION TYPE CARD ===== */}
+   342→      <ComicPanel color="pink">
+   343→        <h2 className="font-bangers text-2xl mb-2 flex items-center gap-2">
+   344→          <IconCoach size={26} /> YOUR PROCRASTINATION PROFILE
+   345→        </h2>
+   346→        <div className="flex flex-col md:flex-row gap-3 items-start">
+   347→          <div className="flex-shrink-0">
+   348→            <ActionWord
+   349→              word={summary.procrastination_type.replace("_", " ").toUpperCase()}
+   350→              color="yellow"
+   351→              size="md"
+   352→              className="block"
+   353→            />
+   354→          </div>
+   355→          <SpeechBubble color="white" tilt="right" className="flex-1">
+   356→            <p className="font-comic-neue font-bold text-black text-sm">
+   357→              Your personalized AI plan, KPIs, and coach are all tuned to this procrastination type.
+   358→              If your patterns have changed, re-take the quiz to recalibrate your BAM! experience.
+   359→            </p>
+   360→          </SpeechBubble>
+   361→        </div>
+   362→        <div className="mt-3 flex flex-wrap gap-2">
+   363→          <ComicButton color="yellow" size="sm" sound="whoosh" onClick={() => setView("plan")}>
+   364→            <span className="flex items-center gap-1"><IconCoach size={18} /> View My Plan</span>
+   365→          </ComicButton>
+   366→          <ComicButton color="green" size="sm" sound="whoosh" onClick={() => setView("coach")}>
+   367→            <span className="flex items-center gap-1"><IconSparkle size={18} /> Ask AI Coach</span>
+   368→          </ComicButton>
+   369→        </div>
+   370→      </ComicPanel>
+   371→
+   372→      {/* ===== RECENT ACTIVITY TIMELINE ===== */}
+   373→      <ComicPanel color="white">
+   374→        <h2 className="font-bangers text-2xl mb-3 flex items-center gap-2">
+   375→          <IconBolt size={26} /> RECENT ACTIVITY
+   376→        </h2>
+   377→        {summary.recent_activity.length === 0 ? (
+   378→          <div className="text-center py-8">
+   379→            <div className="flex justify-center mb-2"><IconSparkle size={48} /></div>
+   380→            <p className="font-comic-neue font-bold">No activity yet — complete a task or focus session to start your story!</p>
+   381→            <ComicButton color="yellow" size="sm" sound="pop" className="mt-3" onClick={() => setView("tasks")}>
+   382→              Add a mission
+   383→            </ComicButton>
+   384→          </div>
+   385→        ) : (
+   386→          <ol className="relative border-l-3 border-black ml-3 space-y-3" style={{ borderLeftWidth: "3px" }}>
+   387→            {summary.recent_activity.map((item, idx) => (
+   388→              <li key={idx} className="ml-4">
+   389→                <div className="absolute -left-2.5 w-5 h-5 bg-[#FFD23F] border-2 border-black rounded-full" />
+   390→                <div className="flex items-start gap-2 flex-wrap">
+   391→                  <div className="flex-1 min-w-0">
+   392→                    <div className="flex items-center gap-2 flex-wrap">
+   393→                      <ActivityIcon kind={item.kind} />
+   394→                      <span className="font-comic-neue font-bold text-sm">{item.title}</span>
+   395→                      {item.xp > 0 && (
+   396→                        <ComicBadge color="yellow">+{item.xp} XP</ComicBadge>
+   397→                      )}
+   398→                    </div>
+   399→                    {item.detail && (
+   400→                      <div className="font-comic-neue text-xs text-black/70 mt-0.5">{item.detail}</div>
+   401→                    )}
+   402→                    <div className="font-comic-neue text-xs text-black/50 mt-0.5 flex items-center gap-1">
+   403→                      <IconClock size={12} />
+   404→                      {timeAgo(new Date(item.timestamp))}
+   405→                    </div>
+   406→                  </div>
+   407→                </div>
+   408→              </li>
+   409→            ))}
+   410→          </ol>
+   411→        )}
+   412→      </ComicPanel>
+   413→
+   414→      {/* ===== SETTINGS PANEL ===== */}
+   415→      <ComicPanel color="cream">
+   416→        <h2 className="font-bangers text-2xl mb-3 flex items-center gap-2">
+   417→          <IconEdit size={26} /> SETTINGS
+   418→        </h2>
+   419→        <div className="space-y-2">
+   420→          {/* Sound toggle */}
+   421→          <div className="flex items-center justify-between p-3 bg-white border-2 border-black rounded-lg">
+   422→            <div className="flex items-center gap-2">
+   423→              {soundOn ? <IconSoundOn size={28} /> : <IconSoundOff size={28} />}
+   424→              <div>
+   425→                <div className="font-bangers text-lg">Sound Effects</div>
+   426→                <div className="font-comic-neue text-xs font-bold text-black/60">
+   427→                  BAM/POW/ZAP sounds on every action
+   428→                </div>
+   429→              </div>
+   430→            </div>
+   431→            <button
+   432→              onClick={handleToggleSound}
+   433→              className={`w-14 h-8 border-3 border-black rounded-full relative transition-all shadow-[2px_2px_0_#0A0A0A] ${soundOn ? "bg-[#06D6A0]" : "bg-[#FF4757]"}`}
+   434→              style={{ borderWidth: "3px" }}
+   435→              title={soundOn ? "Sound ON (click to mute)" : "Sound OFF (click to unmute)"}
+   436→            >
+   437→              <div
+   438→                className={`absolute top-0.5 w-6 h-6 bg-white border-2 border-black rounded-full transition-all ${soundOn ? "left-7" : "left-0.5"}`}
+   439→              />
+   440→            </button>
+   441→          </div>
+   442→
+   443→          {/* Member info */}
+   444→          <div className="flex items-center justify-between p-3 bg-white border-2 border-black rounded-lg">
+   445→            <div className="flex items-center gap-2">
+   446→              <IconCalendar size={28} />
+   447→              <div>
+   448→                <div className="font-bangers text-lg">Member Since</div>
+   449→                <div className="font-comic-neue text-xs font-bold text-black/60">
+   450→                  {memberSinceStr} ({Math.max(0, Math.floor((Date.now() - memberSinceDate.getTime()) / 86400000))} days ago)
+   451→                </div>
+   452→              </div>
+   453→            </div>
+   454→            <ComicBadge color="blue">{summary.days_active} active days</ComicBadge>
+   455→          </div>
+   456→
+   457→          {/* AI usage */}
+   458→          <div className="flex items-center justify-between p-3 bg-white border-2 border-black rounded-lg">
+   459→            <div className="flex items-center gap-2">
+   460→              <IconCoach size={28} />
+   461→              <div>
+   462→                <div className="font-bangers text-lg">AI Coach Interactions</div>
+   463→                <div className="font-comic-neue text-xs font-bold text-black/60">
+   464→                  Lifetime AI calls (breakdowns, plans, chats)
+   465→                </div>
+   466→              </div>
+   467→            </div>
+   468→            <ComicBadge color="orange">{summary.ai_interactions}</ComicBadge>
+   469→          </div>
+   470→        </div>
+   471→      </ComicPanel>
+   472→
+   473→      {/* ===== RETAKE QUIZ CONFIRMATION MODAL ===== */}
+   474→      {retakeConfirm && (
+   475→        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+   476→          <ComicPanel color="yellow" className="max-w-md w-full" tilt="2r">
+   477→            <h3 className="font-bangers text-3xl text-[#FF4757] mb-2" style={{
+   478→              WebkitTextStroke: "1px #0A0A0A",
+   479→              textShadow: "2px 2px 0 #0A0A0A",
+   480→            }}>
+   481→              RE-TAKE QUIZ?
+   482→            </h3>
+   483→            <p className="font-comic-neue font-bold mb-4">
+   484→              This will reset your procrastination profile so you can take the 6-question quiz again.
+   485→              Your tasks, XP, streaks, and achievements will all be kept safe. Only your type and plan
+   486→              may change based on your new answers.
+   487→            </p>
+   488→            <div className="flex gap-2 justify-end">
+   489→              <ComicButton color="white" sound="click" size="sm" onClick={() => setRetakeConfirm(false)}>
+   490→                Cancel
+   491→              </ComicButton>
+   492→              <ComicButton color="green" sound="whoosh" size="sm" onClick={() => {
+   493→                setRetakeConfirm(false);
+   494→                handleRetakeQuiz();
+   495→              }}>
+   496→                <span className="flex items-center gap-1">
+   497→                  <IconRefresh size={18} /> Re-take it!
+   498→                </span>
+   499→              </ComicButton>
+   500→            </div>
+   501→          </ComicPanel>
+   502→        </div>
+   503→      )}
+   504→    </div>
+   505→  );
+   506→}
+   507→
+   508→// ============ Sub-components ============
+   509→
+   510→function StatCard({
+   511→  icon, label, value, sub, color, tilt = "none",
+   512→}: {
+   513→  icon: React.ReactNode;
+   514→  label: string;
+   515→  value: string | number;
+   516→  sub?: string;
+   517→  color: string;
+   518→  tilt?: "none" | "3l" | "3r";
+   519→}) {
+   520→  return (
+   521→    <div
+   522→      className={`comic-panel-flat p-3 border-3 border-black rounded-lg shadow-[3px_3px_0_#0A0A0A] ${tilt === "3l" ? "tilt-3l" : tilt === "3r" ? "tilt-3r" : ""}`}
+   523→      style={{ background: color, borderWidth: "3px" }}
+   524→    >
+   525→      <div className="flex items-center justify-between">
+   526→        <div>{icon}</div>
+   527→        <div className="font-bangers text-2xl text-white" style={{ textShadow: "2px 2px 0 #0A0A0A" }}>
+   528→          {value}
+   529→        </div>
+   530→      </div>
+   531→      <div className="font-bangers text-sm mt-1 text-white" style={{ textShadow: "1px 1px 0 #0A0A0A" }}>
+   532→        {label}
+   533→      </div>
+   534→      {sub && <div className="font-comic-neue text-xs font-bold text-white/90">{sub}</div>}
+   535→    </div>
+   536→  );
+   537→}
+   538→
+   539→function ActivityIcon({ kind }: { kind: string }) {
+   540→  const map: Record<string, React.ReactNode> = {
+   541→    task_completed: <IconCheck size={20} />,
+   542→    focus_session: <IconFocus size={20} />,
+   543→    mood_logged: <IconMood size={20} />,
+   544→    breathe_session: <IconBreathe size={20} />,
+   545→    chain_completed: <IconChain size={20} />,
+   546→    shield_earned: <IconShield size={20} />,
+   547→    achievement_earned: <IconTrophy size={20} />,
+   548→    ai_interaction: <IconCoach size={20} />,
+   549→  };
+   550→  return <span className="flex-shrink-0">{map[kind] || <IconBolt size={20} />}</span>;
+   551→}
+   552→
+   553→function KPITrendChart({ history }: { history: any[] }) {
+   554→  if (history.length < 2) {
+   555→    return <p className="font-comic-neue font-bold text-center py-4">Not enough data yet — come back tomorrow!</p>;
+   556→  }
+   557→
+   558→  const w = 600, h = 200, pad = 30;
+   559→  const maxVal = 100;
+   560→  const stepX = (w - pad * 2) / Math.max(1, history.length - 1);
+   561→
+   562→  const toPath = (key: string) => {
+   563→    return history.map((d, i) => {
+   564→      const x = pad + i * stepX;
+   565→      const v = Number(d[key] || 0);
+   566→      const y = h - pad - (v / maxVal) * (h - pad * 2);
+   567→      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+   568→    }).join(" ");
+   569→  };
+   570→
+   571→  const miPath = toPath("momentum_index");
+   572→  const arsPath = toPath("avoidance_resistance");
+   573→  const plPath = toPath("power_level");
+   574→
+   575→  return (
+   576→    <div>
+   577→      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto bg-[#FFF8DC] border-3 border-black rounded-lg" style={{ borderWidth: "3px" }}>
+   578→        {/* Grid lines */}
+   579→        {[0, 25, 50, 75, 100].map((v) => {
+   580→          const y = h - pad - (v / maxVal) * (h - pad * 2);
+   581→          return (
+   582→            <g key={v}>
+   583→              <line x1={pad} y1={y} x2={w - pad} y2={y} stroke="#0A0A0A" strokeWidth="0.5" strokeDasharray="2,3" opacity="0.3" />
+   584→              <text x={4} y={y + 4} fontSize="10" fontWeight="bold" fill="#0A0A0A">{v}</text>
+   585→            </g>
+   586→          );
+   587→        })}
+   588→
+   589→        {/* MI line (red) */}
+   590→        <path d={miPath} fill="none" stroke="#FF4757" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+   591→        {history.map((d, i) => {
+   592→          const x = pad + i * stepX;
+   593→          const v = Number(d.momentum_index || 0);
+   594→          const y = h - pad - (v / maxVal) * (h - pad * 2);
+   595→          return <circle key={`mi${i}`} cx={x} cy={y} r="3" fill="#FF4757" stroke="#0A0A0A" strokeWidth="1" />;
+   596→        })}
+   597→
+   598→        {/* ARS line (blue) */}
+   599→        <path d={arsPath} fill="none" stroke="#4361EE" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+   600→        {history.map((d, i) => {
+   601→          const x = pad + i * stepX;
+   602→          const v = Number(d.avoidance_resistance || 0);
+   603→          const y = h - pad - (v / maxVal) * (h - pad * 2);
+   604→          return <circle key={`ars${i}`} cx={x} cy={y} r="3" fill="#4361EE" stroke="#0A0A0A" strokeWidth="1" />;
+   605→        })}
+   606→
+   607→        {/* PL line (green) */}
+   608→        <path d={plPath} fill="none" stroke="#06D6A0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+   609→        {history.map((d, i) => {
+   610→          const x = pad + i * stepX;
+   611→          const v = Number(d.power_level || 0);
+   612→          const y = h - pad - (v / maxVal) * (h - pad * 2);
+   613→          return <circle key={`pl${i}`} cx={x} cy={y} r="3" fill="#06D6A0" stroke="#0A0A0A" strokeWidth="1" />;
+   614→        })}
+   615→
+   616→        {/* X-axis labels (first, middle, last) */}
+   617→        {[0, Math.floor(history.length / 2), history.length - 1].map((i) => {
+   618→          if (i >= history.length) return null;
+   619→          const d = history[i];
+   620→          const x = pad + i * stepX;
+   621→          const label = d.date ? String(d.date).slice(5) : "";
+   622→          return (
+   623→            <text key={`x${i}`} x={x} y={h - 8} fontSize="10" fontWeight="bold" fill="#0A0A0A" textAnchor="middle">{label}</text>
+   624→          );
+   625→        })}
+   626→      </svg>
+   627→      <div className="flex flex-wrap gap-3 mt-2 justify-center">
+   628→        <Legend color="#FF4757" label="Momentum Index" />
+   629→        <Legend color="#4361EE" label="Avoidance Resistance" />
+   630→        <Legend color="#06D6A0" label="Power Level" />
+   631→      </div>
+   632→    </div>
+   633→  );
+   634→}
+   635→
+   636→function Legend({ color, label }: { color: string; label: string }) {
+   637→  return (
+   638→    <div className="flex items-center gap-1.5">
+   639→      <span className="inline-block w-4 h-1 rounded" style={{ background: color, boxShadow: `1px 1px 0 #0A0A0A` }} />
+   640→      <span className="font-comic-neue text-xs font-bold">{label}</span>
+   641→    </div>
+   642→  );
+   643→}
+   644→
+   645→function timeAgo(date: Date): string {
+   646→  const diff = Date.now() - date.getTime();
+   647→  const sec = Math.floor(diff / 1000);
+   648→  if (sec < 60) return "just now";
+   649→  const min = Math.floor(sec / 60);
+   650→  if (min < 60) return `${min}m ago`;
+   651→  const hr = Math.floor(min / 60);
+   652→  if (hr < 24) return `${hr}h ago`;
+   653→  const day = Math.floor(hr / 24);
+   654→  if (day < 7) return `${day}d ago`;
+   655→  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+   656→}
+   657→
