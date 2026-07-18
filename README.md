@@ -3,7 +3,9 @@
 > A comic-book-style anti-procrastination platform that helps students and professionals
 > beat avoidance, build focus habits, and track real progress over time. POW! BAM! ZAP!
 
-![BAM! Logo](public/bam-logo.svg)
+<p align="center">
+  <img src="public/bam-logo.svg" alt="BAM! Logo" width="220">
+</p>
 
 ## What is BAM!?
 
