@@ -1,0 +1,406 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ===========================================================
+   BAM! — Comic Style Design System
+   Inspired by retro comic books: bold outlines, halftones,
+   speech bubbles, action words, vibrant primary colors.
+   =========================================================== */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-comic: var(--font-bangers);
+  --font-comic-body: var(--font-comic-neue);
+  --font-display: var(--font-bungee);
+
+  /* Comic palette */
+  --color-bam-red: #FF4757;
+  --color-bam-yellow: #FFD23F;
+  --color-bam-blue: #4361EE;
+  --color-bam-orange: #FF6B35;
+  --color-bam-green: #06D6A0;
+  --color-bam-pink: #FF69B4;
+  --color-bam-purple: #9B5DE5;
+  --color-bam-cream: #FFF8DC;
+  --color-bam-ink: #0A0A0A;
+  --color-bam-paper: #FFFEF7;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: #FFFEF7;
+  --foreground: #0A0A0A;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0A;
+  --primary: #FF4757;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFD23F;
+  --secondary-foreground: #0A0A0A;
+  --muted: #FFF8DC;
+  --muted-foreground: #5A5A5A;
+  --accent: #4361EE;
+  --accent-foreground: #FFFFFF;
+  --destructive: #DC143C;
+  --border: #0A0A0A;
+  --input: #FFF8DC;
+  --ring: #FFD23F;
+  --chart-1: #FF4757;
+  --chart-2: #FFD23F;
+  --chart-3: #4361EE;
+  --chart-4: #06D6A0;
+  --chart-5: #FF6B35;
+  --sidebar: #FFFEF7;
+  --sidebar-foreground: #0A0A0A;
+  --sidebar-primary: #FF4757;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFD23F;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #0A0A0A;
+  --sidebar-ring: #FFD23F;
+}
+
+.dark {
+  --background: #0A0A0A;
+  --foreground: #FFFEF7;
+  --card: #1A1A1A;
+  --card-foreground: #FFFEF7;
+  --popover: #1A1A1A;
+  --popover-foreground: #FFFEF7;
+  --primary: #FF4757;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFD23F;
+  --secondary-foreground: #0A0A0A;
+  --muted: #2A2A2A;
+  --muted-foreground: #B8B8B8;
+  --accent: #4361EE;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF6B6B;
+  --border: #FFFEF7;
+  --input: #2A2A2A;
+  --ring: #FFD23F;
+  --sidebar: #1A1A1A;
+  --sidebar-foreground: #FFFEF7;
+  --sidebar-primary: #FF4757;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFD23F;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #FFFEF7;
+  --sidebar-ring: #FFD23F;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    outline-color: var(--ring);
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-comic-body), system-ui, sans-serif;
+    /* Halftone background pattern */
+    background-image:
+      radial-gradient(circle, rgba(10,10,10,0.05) 1px, transparent 1px),
+      radial-gradient(circle, rgba(10,10,10,0.03) 1px, transparent 1px);
+    background-size: 20px 20px, 30px 30px;
+    background-position: 0 0, 10px 10px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-comic), 'Bangers', cursive;
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer components {
+  /* Comic panel — bold black border + hard shadow */
+  .comic-panel {
+    background: var(--card);
+    border: 3px solid #0A0A0A;
+    border-radius: 14px;
+    box-shadow: 6px 6px 0 0 #0A0A0A;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .comic-panel:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 0 #0A0A0A;
+  }
+  .comic-panel-flat {
+    background: var(--card);
+    border: 3px solid #0A0A0A;
+    border-radius: 14px;
+  }
+
+  /* Comic button — bold, punchy */
+  .comic-btn {
+    font-family: var(--font-comic), 'Bangers', cursive;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    border: 3px solid #0A0A0A;
+    border-radius: 10px;
+    box-shadow: 4px 4px 0 0 #0A0A0A;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    cursor: pointer;
+    padding: 0.5rem 1.2rem;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  .comic-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 0 #0A0A0A;
+  }
+  .comic-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 0 #0A0A0A;
+  }
+
+  .comic-btn-red    { background: #FF4757; color: #FFFFFF; }
+  .comic-btn-yellow { background: #FFD23F; color: #0A0A0A; }
+  .comic-btn-blue   { background: #4361EE; color: #FFFFFF; }
+  .comic-btn-green  { background: #06D6A0; color: #0A0A0A; }
+  .comic-btn-orange { background: #FF6B35; color: #FFFFFF; }
+  .comic-btn-pink   { background: #FF69B4; color: #FFFFFF; }
+  .comic-btn-white  { background: #FFFFFF; color: #0A0A0A; }
+
+  /* Speech bubble */
+  .speech-bubble {
+    position: relative;
+    background: #FFFFFF;
+    border: 3px solid #0A0A0A;
+    border-radius: 20px;
+    padding: 1rem 1.4rem;
+    box-shadow: 4px 4px 0 0 #0A0A0A;
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 30px;
+    border: 8px solid transparent;
+    border-top: 16px solid #0A0A0A;
+    border-right: 16px solid #0A0A0A;
+  }
+  .speech-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 34px;
+    border: 6px solid transparent;
+    border-top: 12px solid #FFFFFF;
+    border-right: 12px solid #FFFFFF;
+    z-index: 1;
+  }
+
+  /* Starburst / burst shape */
+  .starburst {
+    background: #FFD23F;
+    border: 3px solid #0A0A0A;
+    clip-path: polygon(
+      50% 0%, 61% 18%, 83% 12%, 79% 35%, 100% 50%,
+      79% 65%, 83% 88%, 61% 82%, 50% 100%, 39% 82%,
+      17% 88%, 21% 65%, 0% 50%, 21% 35%, 17% 12%, 39% 18%
+    );
+  }
+
+  /* Halftone overlay */
+  .halftone {
+    background-image: radial-gradient(circle, rgba(10,10,10,0.15) 1.5px, transparent 1.5px);
+    background-size: 8px 8px;
+  }
+  .halftone-red {
+    background-image: radial-gradient(circle, rgba(255,71,87,0.45) 2px, transparent 2px);
+    background-size: 10px 10px;
+  }
+  .halftone-yellow {
+    background-image: radial-gradient(circle, rgba(255,210,63,0.55) 2px, transparent 2px);
+    background-size: 10px 10px;
+  }
+  .halftone-blue {
+    background-image: radial-gradient(circle, rgba(67,97,238,0.4) 2px, transparent 2px);
+    background-size: 10px 10px;
+  }
+
+  /* Action word — "POW!" "BAM!" etc. */
+  .action-word {
+    font-family: var(--font-comic), 'Bangers', cursive;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #FFD23F;
+    text-shadow:
+      -2px -2px 0 #0A0A0A,
+      2px -2px 0 #0A0A0A,
+      -2px 2px 0 #0A0A0A,
+      2px 2px 0 #0A0A0A,
+      0 4px 0 #0A0A0A,
+      5px 5px 0 rgba(255,71,87,0.4);
+    transform: rotate(-4deg);
+    display: inline-block;
+    letter-spacing: 0.05em;
+  }
+
+  /* Burst rays background (radial lines) */
+  .burst-rays {
+    background:
+      repeating-conic-gradient(
+        from 0deg,
+        rgba(255,210,63,0.6) 0deg 15deg,
+        transparent 15deg 30deg
+      );
+  }
+
+  /* Comic input */
+  .comic-input {
+    background: #FFFEF7;
+    border: 3px solid #0A0A0A;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-family: var(--font-comic-body), 'Comic Neue', sans-serif;
+    font-size: 1rem;
+    box-shadow: 3px 3px 0 0 #0A0A0A;
+    transition: transform 0.1s ease;
+    width: 100%;
+  }
+  .comic-input:focus {
+    outline: none;
+    background: #FFF8DC;
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 0 #0A0A0A;
+  }
+
+  /* Comic badge */
+  .comic-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-comic), 'Bangers', cursive;
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.7rem;
+    border: 2px solid #0A0A0A;
+    border-radius: 999px;
+    box-shadow: 2px 2px 0 0 #0A0A0A;
+    text-transform: uppercase;
+  }
+
+  /* Tilt utilities */
+  .tilt-left  { transform: rotate(-1.5deg); }
+  .tilt-right { transform: rotate(1.5deg); }
+  .tilt-3l    { transform: rotate(-3deg); }
+  .tilt-3r    { transform: rotate(3deg); }
+}
+
+@layer utilities {
+  .text-stroke-1 {
+    -webkit-text-stroke: 1px #0A0A0A;
+    paint-order: stroke fill;
+  }
+  .text-stroke-2 {
+    -webkit-text-stroke: 2px #0A0A0A;
+    paint-order: stroke fill;
+  }
+  .text-stroke-white-1 {
+    -webkit-text-stroke: 1px #FFFFFF;
+    paint-order: stroke fill;
+  }
+  .shadow-hard {
+    box-shadow: 4px 4px 0 0 #0A0A0A;
+  }
+  .shadow-hard-lg {
+    box-shadow: 6px 6px 0 0 #0A0A0A;
+  }
+  .shadow-hard-sm {
+    box-shadow: 2px 2px 0 0 #0A0A0A;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #FFF8DC;
+  border-left: 2px solid #0A0A0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #FFD23F;
+  border: 2px solid #0A0A0A;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B35;
+}
+
+/* Animations */
+@keyframes bam-pop {
+  0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-4deg); opacity: 1; }
+}
+.animate-bam-pop { animation: bam-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes bam-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px) rotate(-1deg); }
+  40% { transform: translateX(3px) rotate(1deg); }
+  60% { transform: translateX(-2px) rotate(-0.5deg); }
+  80% { transform: translateX(2px) rotate(0.5deg); }
+}
+.animate-bam-shake { animation: bam-shake 0.4s ease-in-out; }
+
+@keyframes bam-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.animate-bam-pulse { animation: bam-pulse 1.5s ease-in-out infinite; }
+
+@keyframes halftone-slide {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 40px; }
+}
+.animate-halftone { animation: halftone-slide 4s linear infinite; }
+
+@keyframes rays-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-rays-spin { animation: rays-spin 30s linear infinite; }
