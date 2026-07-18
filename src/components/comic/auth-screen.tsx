@@ -6,6 +6,10 @@ import { useBamStore } from "@/lib/store";
 import { BamLogo } from "@/components/comic/bam-logo";
 import { ComicButton, ComicPanel, ActionWord, SpeechBubble, BurstRays } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import {
+  IconStar, IconCoach, IconFocus, IconTrophy, IconBolt, IconArrowRight,
+} from "@/components/comic/comic-icons";
 
 export function AuthScreen() {
   const { login, register, user } = useBamStore();
@@ -27,10 +31,12 @@ export function AuthScreen() {
       if (mode === "register") {
         await register(email, username, password, displayName || undefined);
         playSound("bam");
-        toast.success("Welcome to BAM! Let's set you up! 💥");
+        triggerBang({ variant: "boom", word: "WELCOME!", x: 50, y: 35, size: 280 });
+        toast.success("Welcome to BAM! Let's set you up!");
       } else {
         await login(email, password);
         playSound("bam");
+        triggerBang({ variant: "bam", word: "BACK!", x: 50, y: 35, size: 220 });
         toast.success("Welcome back, hero! POW!");
       }
       // BamApp will re-render and route based on user state — no router.push needed
@@ -81,8 +87,9 @@ export function AuthScreen() {
 
           {/* Speech bubble tagline */}
           <SpeechBubble color="yellow" tilt="right" className="mb-6 text-center">
-            <p className="font-comic-neue font-bold text-black">
-              ⭐ Track procrastination • Build focus habits • Level up like a hero!
+            <p className="font-comic-neue font-bold text-black flex items-center justify-center gap-2 flex-wrap">
+              <IconStar size={18} />
+              <span>Track procrastination • Build focus habits • Level up like a hero!</span>
             </p>
           </SpeechBubble>
 
@@ -182,11 +189,13 @@ export function AuthScreen() {
                 className="w-full"
                 disabled={loading}
               >
-                {loading
-                  ? "Loading..."
-                  : mode === "register"
-                    ? "BAM! Sign Me Up 💥"
-                    : "POW! Log Me In ⚡"}
+                <span className="flex items-center justify-center gap-2">
+                  {loading
+                    ? "Loading..."
+                    : mode === "register"
+                      ? <>BAM! Sign Me Up <IconBolt size={22} /></>
+                      : <>POW! Log Me In <IconArrowRight size={22} /></>}
+                </span>
               </ComicButton>
             </form>
 
@@ -225,15 +234,15 @@ export function AuthScreen() {
           {/* Feature badges */}
           <div className="grid grid-cols-3 gap-2 mt-4">
             <ComicPanel color="yellow" tilt="3l" className="text-center p-3">
-              <div className="text-2xl">🎯</div>
+              <div className="flex justify-center mb-1"><IconCoach size={32} /></div>
               <div className="font-bangers text-xs">AI Coach</div>
             </ComicPanel>
             <ComicPanel color="green" tilt="3r" className="text-center p-3">
-              <div className="text-2xl">⏰</div>
+              <div className="flex justify-center mb-1"><IconFocus size={32} /></div>
               <div className="font-bangers text-xs">Focus Timer</div>
             </ComicPanel>
             <ComicPanel color="pink" tilt="3l" className="text-center p-3">
-              <div className="text-2xl">🏆</div>
+              <div className="flex justify-center mb-1"><IconTrophy size={32} /></div>
               <div className="font-bangers text-xs">Achievements</div>
             </ComicPanel>
           </div>

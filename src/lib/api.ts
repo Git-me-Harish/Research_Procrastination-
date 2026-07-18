@@ -172,6 +172,87 @@ export interface QuizQuestion {
   options: Array<{ id: string; text: string; scores: Record<string, number> }>;
 }
 
+// ---------- Power Chain types ----------
+export interface ChainLink {
+  id: number;
+  title: string;
+  position: number;
+  is_required: boolean;
+  completed_today: boolean;
+  last_completed_date: string | null;
+  total_completions: number;
+  icon_code: string;
+  color: string;
+}
+
+export interface PowerChain {
+  id: number;
+  title: string;
+  description: string | null;
+  is_active: boolean;
+  started_at: string;
+  broken_at: string | null;
+  current_chain_days: number;
+  longest_chain_days: number;
+  total_completions: number;
+  last_completed_date: string | null;
+  action_word: string;
+  color: string;
+  links: ChainLink[];
+}
+
+export interface ChainLinkToggleResult {
+  link: ChainLink;
+  chain_completed_today: boolean;
+  chain_broken: boolean;
+  xp_earned: number;
+  new_shield_earned: { id: number; shield_color: string; rarity: string; source: string } | null;
+}
+
+// ---------- Shield types ----------
+export interface Shield {
+  id: number;
+  is_spent: boolean;
+  earned_at: string;
+  spent_at: string | null;
+  spent_for_date: string | null;
+  source: string;
+  source_detail: string | null;
+  shield_color: string;
+  rarity: string;
+}
+
+// ---------- Breathe types ----------
+export interface BreatheSession {
+  id: number;
+  technique: string;
+  cycles_completed: number;
+  duration_seconds: number;
+  calmness_before: number;
+  calmness_after: number;
+  xp_earned: number;
+  created_at: string;
+}
+
+// ---------- KPI types ----------
+export interface KPIs {
+  momentum_index: number;
+  avoidance_resistance: number;
+  power_level: number;
+  chain_strength: number;
+  shield_reserve: number;
+  calm_count_week: number;
+  focus_minutes_today: number;
+  tasks_completed_today: number;
+  tasks_created_today: number;
+  avg_mood_week: number;
+  avg_energy_week: number;
+  avg_action_latency_min: number;
+  streak_days: number;
+  level: number;
+  xp: number;
+}
+
 // ---------- API ----------
 export const api = {
   // Auth
@@ -224,4 +305,40 @@ export const api = {
 
   // Stats
   weeklyStats: () => apiFetch<{ days: any[]; user_xp: number; user_level: number }>("/stats/weekly"),
+
+  // Power Chains
+  listChains: () => apiFetch<PowerChain[]>("/chains"),
+  createChain: (data: {
+    title: string;
+    description?: string;
+    color: string;
+    links: Array<{ title: string; is_required: boolean; icon_code: string; color: string }>;
+  }) => apiFetch<PowerChain>("/chains", { method: "POST", body: JSON.stringify(data) }),
+  getChain: (id: number) => apiFetch<PowerChain>(`/chains/${id}`),
+  deleteChain: (id: number) => apiFetch<void>(`/chains/${id}`, { method: "DELETE" }),
+  toggleChainLink: (chainId: number, linkId: number) =>
+    apiFetch<ChainLinkToggleResult>(`/chains/${chainId}/links/${linkId}/toggle`, { method: "POST" }),
+  restartChain: (id: number) => apiFetch<PowerChain>(`/chains/${id}/restart`, { method: "POST" }),
+
+  // Streak Shields
+  listShields: () => apiFetch<Shield[]>("/shields"),
+  shieldReserve: () => apiFetch<{ reserve: number }>("/shields/reserve"),
+  spendShield: (targetDate: string) =>
+    apiFetch<{ success: boolean; shield: Shield | null; message: string; streak_protected: boolean }>(
+      "/shields/spend", { method: "POST", body: JSON.stringify({ target_date: targetDate }) }
+    ),
+
+  // Breathe sessions
+  listBreatheSessions: () => apiFetch<BreatheSession[]>("/breathe"),
+  createBreatheSession: (data: {
+    technique: "4_7_8" | "box" | "deep_belly";
+    cycles_completed: number;
+    duration_seconds: number;
+    calmness_before: number;
+    calmness_after: number;
+  }) => apiFetch<BreatheSession>("/breathe", { method: "POST", body: JSON.stringify(data) }),
+
+  // KPIs
+  getKPIs: () => apiFetch<KPIs>("/kpis"),
+  kpiHistory: (days = 14) => apiFetch<{ days: any[] }>(`/kpis/history?days=${days}`),
 };

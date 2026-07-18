@@ -8,14 +8,20 @@ import {
   ComicPanel, ComicButton, ActionWord, SpeechBubble, ComicBadge,
 } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import {
+  IconTask, IconCoach, IconStar, IconHeart, IconBolt, IconTarget,
+  IconSparkle, IconCheck, IconClose, IconTrash, IconPlus,
+  IconArrowRight, IconBreathe, IconFlame, IconClock, IconEdit,
+} from "@/components/comic/comic-icons";
 
 const CATEGORIES = [
-  { id: "study",    label: "Study",    emoji: "📚", color: "#4361EE" },
-  { id: "work",     label: "Work",     emoji: "💼", color: "#FF4757" },
-  { id: "personal", label: "Personal", emoji: "🏠", color: "#06D6A0" },
-  { id: "health",   label: "Health",   emoji: "💪", color: "#FF6B35" },
-  { id: "creative", label: "Creative", emoji: "🎨", color: "#FF69B4" },
-  { id: "general",  label: "General",  emoji: "⭐", color: "#FFD23F" },
+  { id: "study",    label: "Study",    Icon: IconTask,   color: "#4361EE" },
+  { id: "work",     label: "Work",     Icon: IconBolt,   color: "#FF4757" },
+  { id: "personal", label: "Personal", Icon: IconHeart,  color: "#06D6A0" },
+  { id: "health",   label: "Health",   Icon: IconFlame,  color: "#FF6B35" },
+  { id: "creative", label: "Creative", Icon: IconSparkle,color: "#FF69B4" },
+  { id: "general",  label: "General",  Icon: IconStar,   color: "#FFD23F" },
 ];
 
 const PRIORITIES = [
@@ -66,7 +72,8 @@ export function TaskManager() {
         energy_required: difficulty,
       });
       playSound("bam");
-      toast.success("BAM! Task created! 💥");
+      triggerBang({ variant: "bam", word: "MISSION!", x: 50, y: 40, size: 240 });
+      toast.success("BAM! Mission created!");
       setTitle("");
       setDescription("");
       setShowCreate(false);
@@ -81,7 +88,9 @@ export function TaskManager() {
     playSound("achievement");
     try {
       await api.updateTask(task.id, { status: "completed", actual_minutes: task.estimated_minutes });
-      toast.success(`POW! Task smashed! +${25 + task.difficulty * 10 + task.estimated_minutes} XP 💥`);
+      const xpGained = 25 + task.difficulty * 10 + task.estimated_minutes;
+      triggerBang({ variant: "boom", word: "DONE!", x: 50, y: 40, size: 280 });
+      toast.success(`POW! Task smashed! +${xpGained} XP`);
       load();
     } catch (err: any) {
       toast.error(err.message);
@@ -92,6 +101,7 @@ export function TaskManager() {
     playSound("wham");
     try {
       await api.deleteTask(task.id);
+      triggerBang({ variant: "wham", word: "DELETED!", x: 50, y: 50, size: 180 });
       toast.success("Task demolished!");
       load();
     } catch (err: any) {
@@ -115,16 +125,22 @@ export function TaskManager() {
           </p>
         </div>
         <ComicButton color="yellow" sound="pop" size="lg" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? "✕ Close" : "+ New Mission"}
+          <span className="flex items-center gap-1">
+            {showCreate ? <IconClose size={20} /> : <IconPlus size={20} />}
+            {showCreate ? "Close" : "New Mission"}
+          </span>
         </ComicButton>
       </div>
 
       {/* Procrastination type hint */}
       {user?.procrastination_type && (
         <SpeechBubble color="yellow" tilt="right">
-          <p className="font-comic-neue font-bold text-black">
-            🦸 You're a <strong>{user.procrastination_type.replace("_", " ").toUpperCase()}</strong>.
-            AI breakdowns are tuned to your style. Tap "AI Breakdown" on any task to see the magic!
+          <p className="font-comic-neue font-bold text-black flex items-start gap-2">
+            <IconCoach size={24} className="flex-shrink-0" />
+            <span>
+              You're a <strong>{user.procrastination_type.replace("_", " ").toUpperCase()}</strong>.
+              AI breakdowns are tuned to your style. Tap "AI Breakdown" on any task to see the magic!
+            </span>
           </p>
         </SpeechBubble>
       )}
@@ -164,12 +180,12 @@ export function TaskManager() {
                       key={c.id}
                       type="button"
                       onClick={() => { setCategory(c.id); playSound("click"); }}
-                      className={`p-2 border-2 border-black rounded-md text-xs font-bangers ${
+                      className={`p-2 border-2 border-black rounded-md text-xs font-bangers flex flex-col items-center gap-1 ${
                         category === c.id ? "shadow-[2px_2px_0_#0A0A0A] -translate-y-0.5" : ""
                       }`}
                       style={{ background: category === c.id ? c.color : "#FFFFFF" }}
                     >
-                      <div className="text-base">{c.emoji}</div>
+                      <c.Icon size={20} />
                       {c.label}
                     </button>
                   ))}
@@ -228,7 +244,9 @@ export function TaskManager() {
 
             <div className="flex gap-2">
               <ComicButton type="submit" color="red" sound="bam" size="lg">
-                BAM! Create It 💥
+                <span className="flex items-center gap-1">
+                  <IconBolt size={20} /> BAM! Create It
+                </span>
               </ComicButton>
               <ComicButton type="button" color="white" sound="click" size="lg" onClick={() => setShowCreate(false)}>
                 Cancel
@@ -262,10 +280,12 @@ export function TaskManager() {
         </div>
       ) : tasks.length === 0 ? (
         <ComicPanel color="white" className="text-center py-12">
-          <div className="text-6xl mb-3">🎯</div>
+          <div className="flex justify-center mb-3">
+            <IconTarget size={64} />
+          </div>
           <h3 className="font-bangers text-2xl">NO MISSIONS HERE!</h3>
           <p className="font-comic-neue font-bold mt-2">
-            Tap "+ New Mission" to add your first task and start your hero journey!
+            Tap "New Mission" to add your first task and start your hero journey!
           </p>
         </ComicPanel>
       ) : (
@@ -291,7 +311,8 @@ export function TaskManager() {
           onApply={async (substeps) => {
             try {
               await api.updateTask(breakdownTask.id, { breakdown: substeps });
-              toast.success("Breakdown applied! 💥");
+              triggerBang({ variant: "kapow", word: "BROKEN!", x: 50, y: 40, size: 240 });
+              toast.success("Breakdown applied!");
               setBreakdownTask(null);
               load();
             } catch (err: any) {
@@ -321,10 +342,10 @@ function TaskCard({
     >
       <div className="flex items-start gap-3">
         <div
-          className="w-12 h-12 flex items-center justify-center text-2xl border-2 border-black rounded-lg shadow-[2px_2px_0_#0A0A0A]"
+          className="w-12 h-12 flex items-center justify-center border-2 border-black rounded-lg shadow-[2px_2px_0_#0A0A0A]"
           style={{ background: cat.color }}
         >
-          {cat.emoji}
+          <cat.Icon size={28} />
         </div>
         <div className="flex-1">
           <h3 className={`font-bangers text-xl ${isCompleted ? "line-through" : ""}`}>
@@ -340,12 +361,18 @@ function TaskCard({
             <ComicBadge color="blue">{task.estimated_minutes}m</ComicBadge>
             <ComicBadge color="pink">Difficulty: {task.difficulty}/5</ComicBadge>
             {task.breakdown && task.breakdown.length > 0 && (
-              <ComicBadge color="green">🤖 AI Broke Down</ComicBadge>
+              <ComicBadge color="green">
+                <span className="flex items-center gap-1">
+                  <IconCoach size={14} /> AI Broke Down
+                </span>
+              </ComicBadge>
             )}
           </div>
           {task.breakdown && task.breakdown.length > 0 && (
             <div className="mt-3 p-2 bg-[#FFF8DC] border-2 border-black rounded-md">
-              <div className="font-bangers text-sm mb-1">🤖 AI BREAKDOWN:</div>
+              <div className="font-bangers text-sm mb-1 flex items-center gap-1">
+                <IconCoach size={16} /> AI BREAKDOWN:
+              </div>
               <ol className="font-comic-neue text-sm list-decimal pl-5 space-y-1">
                 {task.breakdown.map((step, i) => (
                   <li key={i}>
@@ -364,15 +391,21 @@ function TaskCard({
         {!isCompleted && (
           <>
             <ComicButton color="green" size="sm" sound="achievement" onClick={onComplete}>
-              ✓ Done
+              <span className="flex items-center gap-1">
+                <IconCheck size={16} /> Done
+              </span>
             </ComicButton>
             <ComicButton color="blue" size="sm" sound="pow" onClick={onBreakdown}>
-              🤖 AI Breakdown
+              <span className="flex items-center gap-1">
+                <IconCoach size={16} /> AI Breakdown
+              </span>
             </ComicButton>
           </>
         )}
         <ComicButton color="red" size="sm" sound="wham" onClick={onDelete}>
-          🗑 Delete
+          <span className="flex items-center gap-1">
+            <IconTrash size={16} /> Delete
+          </span>
         </ComicButton>
       </div>
     </div>
@@ -400,6 +433,7 @@ function AIBreakdownModal({
       .then((r) => {
         setResult(r);
         playSound("achievement");
+        triggerBang({ variant: "kapow", word: "ZAP!", x: 50, y: 30, size: 200 });
       })
       .catch((e) => {
         toast.error(e.message);
@@ -409,9 +443,12 @@ function AIBreakdownModal({
   }, [task.id]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(10,10,10,0.75)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
       <div
-        className="comic-panel-flat max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 bg-[#FFFEF7]"
+        className="comic-panel-flat max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 comic-paper-cream"
         onClick={(e) => e.stopPropagation()}
       >
         {loading ? (
@@ -427,11 +464,11 @@ function AIBreakdownModal({
         ) : result ? (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bangers text-3xl text-[#4361EE]" style={{
+              <h2 className="font-bangers text-3xl text-[#4361EE] flex items-center gap-2" style={{
                 WebkitTextStroke: "1.5px #0A0A0A",
                 textShadow: "3px 3px 0 #0A0A0A",
               }}>
-                🤖 AI BREAKDOWN
+                <IconCoach size={36} /> AI BREAKDOWN
               </h2>
               <ActionWord word={result.action_word} color="yellow" size="md" />
             </div>
@@ -447,14 +484,20 @@ function AIBreakdownModal({
                   <div className="flex-1">
                     <div className="font-bangers text-base">{step.title}</div>
                     <div className="font-comic-neue text-sm">{step.description}</div>
-                    <ComicBadge color="blue" className="mt-1">{step.estimated_minutes} min</ComicBadge>
+                    <ComicBadge color="blue" className="mt-1">
+                      <span className="flex items-center gap-1">
+                        <IconClock size={12} /> {step.estimated_minutes} min
+                      </span>
+                    </ComicBadge>
                   </div>
                 </div>
               ))}
             </div>
             <div className="flex gap-2 mt-4">
               <ComicButton color="green" sound="achievement" size="lg" onClick={() => onApply(result.substeps)}>
-                ✓ Apply Breakdown
+                <span className="flex items-center gap-1">
+                  <IconCheck size={20} /> Apply Breakdown
+                </span>
               </ComicButton>
               <ComicButton color="white" sound="click" size="lg" onClick={onClose}>
                 Cancel

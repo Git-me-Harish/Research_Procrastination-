@@ -8,6 +8,11 @@ import {
   ComicPanel, ComicButton, ActionWord, SpeechBubble, ComicBadge, BurstRays,
 } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import {
+  IconPlan, IconCoach, IconStar, IconTrophy, IconReset,
+  IconBolt, IconTarget, IconBreathe, IconHeart, IconClock,
+} from "@/components/comic/comic-icons";
 
 export function PersonalizedPlan() {
   const { user, refreshUser } = useBamStore();
@@ -39,7 +44,8 @@ export function PersonalizedPlan() {
       setUpdatedAt(resp.generated_at);
       await refreshUser();
       playSound("achievement");
-      toast.success("BOOM! Your personalized plan is ready! 💥");
+      triggerBang({ variant: "boom", word: "PLAN READY!", x: 50, y: 35, size: 280 });
+      toast.success("BOOM! Your personalized plan is ready!");
     } catch (err: any) {
       playSound("error");
       toast.error(err.message);
@@ -72,10 +78,10 @@ export function PersonalizedPlan() {
   }
 
   const sections = [
-    { key: "morning_routine", label: "🌅 Morning Routine", color: "#FFD23F" },
-    { key: "focus_blocks",    label: "🎯 Focus Blocks",    color: "#FF4757" },
-    { key: "recovery",        label: "💆 Recovery",         color: "#06D6A0" },
-    { key: "evening_review",  label: "🌙 Evening Review",   color: "#4361EE" },
+    { key: "morning_routine", label: "Morning Routine", color: "#FFD23F", Icon: IconClock },
+    { key: "focus_blocks",    label: "Focus Blocks",    color: "#FF4757", Icon: IconTarget },
+    { key: "recovery",        label: "Recovery",         color: "#06D6A0", Icon: IconBreathe },
+    { key: "evening_review",  label: "Evening Review",   color: "#4361EE", Icon: IconStar },
   ];
 
   return (
@@ -98,7 +104,7 @@ export function PersonalizedPlan() {
               )}
             </div>
             <ComicButton color="yellow" sound="whoosh" size="lg" onClick={generatePlan}>
-              🔄 Regenerate
+              <span className="flex items-center gap-1"><IconReset size={20} /> Regenerate</span>
             </ComicButton>
           </div>
         </ComicPanel>
@@ -107,8 +113,9 @@ export function PersonalizedPlan() {
       {/* One-pager summary */}
       {plan.one_pager_summary && (
         <SpeechBubble color="yellow" tilt="right">
-          <p className="font-comic-neue font-bold text-black text-lg">
-            ⭐ {plan.one_pager_summary}
+          <p className="font-comic-neue font-bold text-black text-lg flex items-start gap-2">
+            <IconStar size={28} className="flex-shrink-0" />
+            <span>{plan.one_pager_summary}</span>
           </p>
         </SpeechBubble>
       )}
@@ -116,7 +123,7 @@ export function PersonalizedPlan() {
       {/* Weekly milestone */}
       {plan.weekly_milestone && (
         <ComicPanel color="pink" tilt="3r">
-          <h3 className="font-bangers text-2xl mb-2">🏆 THIS WEEK'S MILESTONE</h3>
+          <h3 className="font-bangers text-2xl mb-2 flex items-center gap-2"><IconTrophy size={28} /> THIS WEEK'S MILESTONE</h3>
           <p className="font-comic-neue font-bold text-lg">{plan.weekly_milestone}</p>
         </ComicPanel>
       )}
@@ -135,8 +142,8 @@ export function PersonalizedPlan() {
           if (!items || !Array.isArray(items)) return null;
           return (
             <ComicPanel key={section.key} color="white" tilt={Math.random() > 0.5 ? "3l" : "3r"}>
-              <h3 className="font-bangers text-xl mb-3" style={{ color: section.color }}>
-                {section.label}
+              <h3 className="font-bangers text-xl mb-3 flex items-center gap-2" style={{ color: section.color }}>
+                <section.Icon size={24} /> {section.label}
               </h3>
               <ul className="space-y-2">
                 {items.map((item: string, i: number) => (
@@ -159,7 +166,7 @@ export function PersonalizedPlan() {
       {/* Procrastination type info */}
       {user?.procrastination_type && (
         <ComicPanel color="blue">
-          <h3 className="font-bangers text-2xl mb-2">🦸 YOUR PROCRASTINATION TYPE</h3>
+          <h3 className="font-bangers text-2xl mb-2 flex items-center gap-2"><IconCoach size={28} /> YOUR PROCRASTINATION TYPE</h3>
           <ActionWord
             word={user.procrastination_type.replace("_", " ").toUpperCase()}
             color="yellow"

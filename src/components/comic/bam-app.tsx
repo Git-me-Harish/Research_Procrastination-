@@ -12,7 +12,11 @@ import { AICoach } from "@/components/comic/ai-coach";
 import { AchievementsGallery } from "@/components/comic/achievements-gallery";
 import { MoodCheckin } from "@/components/comic/mood-checkin";
 import { PersonalizedPlan } from "@/components/comic/personalized-plan";
+import { PowerChainView } from "@/components/comic/power-chain";
+import { StreakShieldView } from "@/components/comic/streak-shield";
+import { BreatheOverlay } from "@/components/comic/breathe-overlay";
 import { BamShell } from "@/components/comic/bam-shell";
+import { IconBreathe } from "@/components/comic/comic-icons";
 
 export type View =
   | "dashboard"
@@ -21,12 +25,15 @@ export type View =
   | "coach"
   | "achievements"
   | "mood"
-  | "plan";
+  | "plan"
+  | "chains"
+  | "shields";
 
 export function BamApp() {
   const { user, token, refreshUser } = useBamStore();
   const [view, setView] = useState<View>("dashboard");
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [showBreathe, setShowBreathe] = useState(false);
 
   useEffect(() => {
     initSoundOnFirstInteraction();
@@ -43,7 +50,7 @@ export function BamApp() {
   // Show loading while bootstrapping
   if (!bootstrapped) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFEF7]">
+      <div className="min-h-screen flex items-center justify-center comic-paper-warm">
         <div className="text-center">
           <div className="font-bangers text-6xl text-[#FF4757]" style={{
             WebkitTextStroke: "2px #0A0A0A",
@@ -74,14 +81,23 @@ export function BamApp() {
   };
 
   return (
-    <BamShell view={view} setView={setViewWithSound}>
-      {view === "dashboard" && <BamDashboard setView={setViewWithSound} />}
-      {view === "tasks" && <TaskManager />}
-      {view === "focus" && <FocusTimer />}
-      {view === "coach" && <AICoach />}
-      {view === "achievements" && <AchievementsGallery />}
-      {view === "mood" && <MoodCheckin />}
-      {view === "plan" && <PersonalizedPlan />}
-    </BamShell>
+    <>
+      <BamShell
+        view={view}
+        setView={setViewWithSound}
+        onOpenBreathe={() => { playSound("whoosh"); setShowBreathe(true); }}
+      >
+        {view === "dashboard" && <BamDashboard setView={setViewWithSound} />}
+        {view === "tasks" && <TaskManager />}
+        {view === "focus" && <FocusTimer />}
+        {view === "coach" && <AICoach />}
+        {view === "achievements" && <AchievementsGallery />}
+        {view === "mood" && <MoodCheckin />}
+        {view === "plan" && <PersonalizedPlan />}
+        {view === "chains" && <PowerChainView />}
+        {view === "shields" && <StreakShieldView />}
+      </BamShell>
+      {showBreathe && <BreatheOverlay onClose={() => setShowBreathe(false)} />}
+    </>
   );
 }

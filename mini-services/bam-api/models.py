@@ -66,6 +66,10 @@ class User(Base):
     mood_entries = relationship("MoodEntry", back_populates="user", cascade="all, delete-orphan")
     achievements = relationship("UserAchievement", back_populates="user", cascade="all, delete-orphan")
     ai_interactions = relationship("AIInteraction", back_populates="user", cascade="all, delete-orphan")
+    power_chains = relationship("PowerChain", back_populates="user", cascade="all, delete-orphan")
+    streak_shields = relationship("StreakShield", back_populates="user", cascade="all, delete-orphan")
+    breathe_sessions = relationship("BreatheSession", back_populates="user", cascade="all, delete-orphan")
+    kpi_snapshots = relationship("KPISnapshot", back_populates="user", cascade="all, delete-orphan")
 
 
 # ---------- Task ----------
@@ -222,3 +226,169 @@ class AIInteraction(Base):
     created_at = Column(DateTime, default=utc_now, index=True)
 
     user = relationship("User", back_populates="ai_interactions")
+
+
+# ============================================================
+# UNIQUE BAM! FEATURES — Power Chain, Streak Shield, Breathe
+# ============================================================
+
+# ---------- Power Chain (habit stacking) ----------
+class PowerChain(Base):
+    """A user's habit chain — links habits together. Breaking one breaks the chain.
+
+    KPI: chain_strength (max consecutive days chain remained intact)
+    """
+    __tablename__ = "power_chains"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(120), nullable=False)  # e.g. "Morning Power Routine"
+    description = Column(Text, nullable=True)
+
+    # Chain status
+    is_active = Column(Boolean, default=True)
+    started_at = Column(DateTime, default=utc_now)
+    broken_at = Column(DateTime, nullable=True)  # set when chain snaps
+
+    # KPIs
+    current_chain_days = Column(Integer, default=0)      # consecutive days intact
+    longest_chain_days = Column(Integer, default=0)      # all-time best
+    total_completions = Column(Integer, default=0)
+    last_completed_date = Column(String(10), nullable=True)  # YYYY-MM-DD
+
+    # Comic flair
+    action_word = Column(String(20), default="CHAIN!")
+    color = Column(String(20), default="yellow")
+
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    user = relationship("User", back_populates="power_chains")
+    links = relationship("ChainLink", back_populates="chain", cascade="all, delete-orphan",
+                         order_by="ChainLink.position")
+
+
+class ChainLink(Base):
+    """A single habit node in a power chain."""
+    __tablename__ = "chain_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chain_id = Column(Integer, ForeignKey("power_chains.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    title = Column(String(120), nullable=False)
+    position = Column(Integer, default=0)  # order in chain
+    is_required = Column(Boolean, default=True)  # must complete to keep chain
+
+    # Today's completion state
+    completed_today = Column(Boolean, default=False)
+    last_completed_date = Column(String(10), nullable=True)
+
+    # Cumulative stats
+    total_completions = Column(Integer, default=0)
+
+    # Comic flair
+    icon_code = Column(String(40), default="bolt")  # references our SVG icon set
+    color = Column(String(20), default="yellow")
+
+    created_at = Column(DateTime, default=utc_now)
+
+    chain = relationship("PowerChain", back_populates="links")
+
+
+# ---------- Streak Shield (recovery mechanic) ----------
+class StreakShield(Base):
+    """Collectible shield tokens earned by completing bonus missions.
+    Each shield can be spent to protect one missed day from breaking a streak.
+
+    KPI: shield_reserve (current unspent balance)
+    """
+    __tablename__ = "streak_shields"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Shield state
+    is_spent = Column(Boolean, default=False)
+    earned_at = Column(DateTime, default=utc_now)
+    spent_at = Column(DateTime, nullable=True)
+    spent_for_date = Column(String(10), nullable=True)  # the date it protected
+
+    # How it was earned
+    source = Column(String(60), default="bonus_mission")  # bonus_mission, achievement, daily_streak, deep_work
+    source_detail = Column(String(255), nullable=True)
+
+    # Comic flair
+    shield_color = Column(String(20), default="blue")  # blue, gold, rainbow
+    rarity = Column(String(20), default="common")  # common, rare, epic, legendary
+
+    user = relationship("User", back_populates="streak_shields")
+
+
+# ---------- Breathe Sessions ----------
+class BreatheSession(Base):
+    """4-7-8 breathing exercise sessions.
+
+    KPI: calm_count_week (sessions this week) + total_calm_minutes
+    """
+    __tablename__ = "breathe_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Session config
+    technique = Column(String(40), default="4_7_8")  # 4_7_8, box, deep_belly
+    cycles_completed = Column(Integer, default=0)
+    duration_seconds = Column(Integer, default=0)
+
+    # User feedback
+    calmness_before = Column(Integer, default=3)  # 1-5
+    calmness_after = Column(Integer, default=3)   # 1-5
+
+    # XP reward
+    xp_earned = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=utc_now, index=True)
+
+    user = relationship("User", back_populates="breathe_sessions")
+
+
+# ---------- Daily KPI Snapshot (computed at end of day) ----------
+class KPISnapshot(Base):
+    """Daily snapshot of computed KPIs for trend tracking.
+
+    Unique BAM! KPIs (not found in other apps):
+      - momentum_index: composite of streak × focus × completion (0-100)
+      - avoidance_resistance: how fast user acts on tasks (lower latency = higher score, 0-100)
+      - power_level: energy × completion ratio (0-100)
+      - chain_strength: longest active power chain
+      - shield_reserve: unspent shields
+      - calm_count_week: breathing sessions this week
+    """
+    __tablename__ = "kpi_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    snapshot_date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
+
+    # BAM! unique KPIs (0-100 unless noted)
+    momentum_index = Column(Float, default=0)
+    avoidance_resistance = Column(Float, default=0)
+    power_level = Column(Float, default=0)
+    chain_strength = Column(Integer, default=0)
+    shield_reserve = Column(Integer, default=0)
+    calm_count_week = Column(Integer, default=0)
+
+    # Underlying metrics
+    focus_minutes = Column(Integer, default=0)
+    tasks_completed = Column(Integer, default=0)
+    tasks_created = Column(Integer, default=0)
+    avg_mood = Column(Float, default=0)
+    avg_energy = Column(Float, default=0)
+    avg_action_latency_min = Column(Float, default=0)  # avg minutes from task creation to first action
+
+    created_at = Column(DateTime, default=utc_now)
+
+    __table_args__ = (UniqueConstraint("user_id", "snapshot_date", name="uq_user_kpi_day"),)
+
+    user = relationship("User", back_populates="kpi_snapshots")

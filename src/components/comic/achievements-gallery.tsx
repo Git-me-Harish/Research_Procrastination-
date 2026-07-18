@@ -7,6 +7,10 @@ import {
   ComicPanel, ComicButton, ActionWord, SpeechBubble, ComicBadge, BurstRays,
 } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import {
+  IconTrophy, IconStar, IconChart, IconLock, IconCheck, IconBolt, IconFlame, IconBreathe, IconTarget, IconHeart, IconSparkle,
+} from "@/components/comic/comic-icons";
 
 const FLAIR_COLORS: Record<string, string> = {
   pow:  "#FF4757",
@@ -64,17 +68,17 @@ export function AchievementsGallery() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <ComicPanel color="yellow" tilt="3l" className="text-center">
-          <div className="text-4xl">🏆</div>
+          <div className="flex justify-center mb-1"><IconTrophy size={48} /></div>
           <div className="font-bangers text-3xl">{earnedCount}/{totalCount}</div>
           <div className="font-comic-neue text-xs font-bold">EARNED</div>
         </ComicPanel>
         <ComicPanel color="green" className="text-center">
-          <div className="text-4xl">⭐</div>
+          <div className="flex justify-center mb-1"><IconStar size={48} /></div>
           <div className="font-bangers text-3xl">{totalXp}</div>
           <div className="font-comic-neue text-xs font-bold">XP FROM TROPHIES</div>
         </ComicPanel>
         <ComicPanel color="blue" tilt="3r" className="text-center">
-          <div className="text-4xl">📈</div>
+          <div className="flex justify-center mb-1"><IconChart size={48} /></div>
           <div className="font-bangers text-3xl">{completion.toFixed(0)}%</div>
           <div className="font-comic-neue text-xs font-bold">COMPLETION</div>
         </ComicPanel>
@@ -82,7 +86,7 @@ export function AchievementsGallery() {
 
       {/* Progress bar */}
       <ComicPanel color="white">
-        <h3 className="font-bangers text-lg mb-2">📊 COMPLETION PROGRESS</h3>
+        <h3 className="font-bangers text-lg mb-2 flex items-center gap-2"><IconChart size={24} /> COMPLETION PROGRESS</h3>
         <div className="h-6 bg-[#FFF8DC] border-3 border-black rounded-full overflow-hidden shadow-[3px_3px_0_#0A0A0A]">
           <div
             className="h-full transition-all duration-500"
@@ -112,15 +116,15 @@ export function AchievementsGallery() {
                 filter: isEarned ? "none" : "grayscale(60%)",
               }}
             >
-              <div className={`text-5xl mb-2 ${isEarned ? "" : "opacity-50"}`}>
-                {isEarned ? ach.icon_emoji : "🔒"}
+              <div className={`flex justify-center mb-2 ${isEarned ? "" : "opacity-50"}`}>
+                {isEarned ? <IconTrophy size={56} /> : <IconLock size={56} />}
               </div>
               <h3 className="font-bangers text-base">{ach.title}</h3>
               <p className="font-comic-neue text-xs mt-1 mb-2">{ach.description}</p>
               <div className="flex justify-center gap-1 flex-wrap">
                 <ComicBadge color="yellow">+{ach.xp_reward} XP</ComicBadge>
                 {isEarned && earnedData && (
-                  <ComicBadge color="green">✓ EARNED</ComicBadge>
+                  <ComicBadge color="green"><span className="flex items-center gap-1"><IconCheck size={12} /> EARNED</span></ComicBadge>
                 )}
               </div>
               {isEarned && earnedData && (
@@ -136,17 +140,20 @@ export function AchievementsGallery() {
       {/* Encouragement */}
       {earnedCount < totalCount && (
         <SpeechBubble color="yellow" tilt="left">
-          <p className="font-comic-neue font-bold text-black">
-            💪 You've earned <strong>{earnedCount}</strong> out of <strong>{totalCount}</strong> trophies.
-            Complete more tasks, build longer streaks, and rack up focus minutes to unlock them all!
-            POW!
+          <p className="font-comic-neue font-bold text-black flex items-start gap-2">
+            <IconBolt size={22} className="flex-shrink-0" />
+            <span>
+              You've earned <strong>{earnedCount}</strong> out of <strong>{totalCount}</strong> trophies.
+              Complete more tasks, build longer streaks, and rack up focus minutes to unlock them all!
+              POW!
+            </span>
           </p>
         </SpeechBubble>
       )}
 
       {earnedCount === totalCount && (
         <ComicPanel color="yellow" tilt="3r" className="text-center">
-          <div className="text-6xl mb-2">👑</div>
+          <div className="flex justify-center mb-2"><IconStar size={72} fill="#FFD23F" /></div>
           <ActionWord word="LEGEND!" color="red" size="xl" />
           <p className="font-comic-neue font-bold text-lg mt-2">
             You've earned every single trophy. You are a true BAM! Legend!

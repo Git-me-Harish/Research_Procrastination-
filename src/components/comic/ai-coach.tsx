@@ -8,6 +8,8 @@ import {
   ComicPanel, ComicButton, ActionWord, SpeechBubble, ComicBadge, BurstRays,
 } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import { IconCoach, IconSend, IconSparkle, IconBolt } from "@/components/comic/comic-icons";
 
 interface Message {
   role: "user" | "coach";
@@ -37,7 +39,7 @@ export function AICoach() {
     // Welcome message
     setMessages([{
       role: "coach",
-      content: `Hey there, ${user?.display_name || "hero"}! I'm BAM!, your comic-book anti-procrastination coach. I can see you're a ${user?.procrastination_type.replace("_", " ") || "mystery"} type. What's blocking you today? I'm here to help you POW through it! 💥`,
+      content: `Hey there, ${user?.display_name || "hero"}! I'm BAM!, your comic-book anti-procrastination coach. I can see you're a ${user?.procrastination_type.replace("_", " ") || "mystery"} type. What's blocking you today? I'm here to help you POW through it!`,
       action_word: "POW!",
       timestamp: new Date().toISOString(),
     }]);
@@ -72,6 +74,7 @@ export function AICoach() {
         },
       });
       playSound("achievement");
+      triggerBang({ variant: "pow", word: resp.action_word || "BAM!", x: 50, y: 30, size: 180 });
       setMessages((m) => [...m, {
         role: "coach",
         content: resp.reply,
@@ -94,8 +97,8 @@ export function AICoach() {
         <BurstRays animate className="opacity-15" />
         <ComicPanel color="green" tilt="3r" className="relative">
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 flex items-center justify-center bg-white border-3 border-black rounded-full shadow-[3px_3px_0_#0A0A0A] text-3xl">
-              🤖
+            <div className="w-16 h-16 flex items-center justify-center bg-white border-3 border-black rounded-full shadow-[3px_3px_0_#0A0A0A]">
+              <IconCoach size={40} />
             </div>
             <div>
               <ActionWord word="BAM! COACH" color="yellow" size="md" />
@@ -122,7 +125,7 @@ export function AICoach() {
               <div className={`max-w-[85%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 {msg.role === "coach" && (
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 flex items-center justify-center bg-[#06D6A0] border-2 border-black rounded-full text-sm">🤖</div>
+                    <div className="w-7 h-7 flex items-center justify-center bg-[#06D6A0] border-2 border-black rounded-full"><IconCoach size={18} /></div>
                     <span className="font-bangers text-sm">BAM! Coach</span>
                     {msg.action_word && (
                       <ActionWord word={msg.action_word} color="yellow" size="sm" className="ml-1" />
@@ -151,7 +154,7 @@ export function AICoach() {
             <div className="flex justify-start">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 flex items-center justify-center bg-[#06D6A0] border-2 border-black rounded-full text-sm">🤖</div>
+                  <div className="w-7 h-7 flex items-center justify-center bg-[#06D6A0] border-2 border-black rounded-full"><IconCoach size={18} /></div>
                   <span className="font-bangers text-sm">BAM! Coach is thinking...</span>
                 </div>
                 <div className="speech-bubble bg-white tilt-left">
@@ -169,7 +172,7 @@ export function AICoach() {
         {/* Suggested prompts */}
         {messages.length <= 1 && (
           <div className="p-3 bg-[#FFD23F] border-t-2 border-black">
-            <div className="font-bangers text-sm mb-2">💡 TRY ASKING:</div>
+            <div className="font-bangers text-sm mb-2 flex items-center gap-1"><IconSparkle size={16} /> TRY ASKING:</div>
             <div className="flex flex-wrap gap-2">
               {SUGGESTED_PROMPTS.map((p) => (
                 <button
@@ -198,7 +201,9 @@ export function AICoach() {
             disabled={loading}
           />
           <ComicButton type="submit" color="red" sound="bam" disabled={loading || !input.trim()}>
-            {loading ? "..." : "POW! ▶"}
+            <span className="flex items-center gap-1">
+              {loading ? "..." : <>POW! <IconSend size={18} /></>}
+            </span>
           </ComicButton>
         </form>
       </ComicPanel>

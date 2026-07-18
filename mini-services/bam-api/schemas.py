@@ -211,3 +211,127 @@ class DashboardOut(BaseModel):
     current_mood: Optional[MoodEntryOut]
     streak_data: dict[str, Any]
     motivational_quote: str
+
+
+# ============================================================
+# UNIQUE BAM! FEATURES — Power Chain, Streak Shield, Breathe
+# ============================================================
+
+# ---------- Power Chain ----------
+class ChainLinkCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    is_required: bool = True
+    icon_code: str = "bolt"
+    color: str = "yellow"
+
+
+class ChainLinkOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    position: int
+    is_required: bool
+    completed_today: bool
+    last_completed_date: Optional[str]
+    total_completions: int
+    icon_code: str
+    color: str
+
+
+class ChainCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    description: Optional[str] = None
+    color: str = "yellow"
+    links: list[ChainLinkCreate] = Field(default_factory=list, max_length=10)
+
+
+class ChainOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    description: Optional[str]
+    is_active: bool
+    started_at: datetime
+    broken_at: Optional[datetime]
+    current_chain_days: int
+    longest_chain_days: int
+    total_completions: int
+    last_completed_date: Optional[str]
+    action_word: str
+    color: str
+    links: list[ChainLinkOut]
+
+
+class ChainLinkToggleOut(BaseModel):
+    link: ChainLinkOut
+    chain_completed_today: bool
+    chain_broken: bool
+    xp_earned: int
+    new_shield_earned: Optional[dict[str, Any]] = None
+
+
+# ---------- Streak Shield ----------
+class ShieldOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    is_spent: bool
+    earned_at: datetime
+    spent_at: Optional[datetime]
+    spent_for_date: Optional[str]
+    source: str
+    source_detail: Optional[str]
+    shield_color: str
+    rarity: str
+
+
+class ShieldSpendRequest(BaseModel):
+    target_date: str  # YYYY-MM-DD to protect
+
+
+class ShieldSpendResponse(BaseModel):
+    success: bool
+    shield: Optional[ShieldOut] = None
+    message: str
+    streak_protected: bool
+
+
+# ---------- Breathe Sessions ----------
+class BreatheSessionCreate(BaseModel):
+    technique: Literal["4_7_8", "box", "deep_belly"] = "4_7_8"
+    cycles_completed: int = Field(default=1, ge=1, le=20)
+    duration_seconds: int = Field(default=60, ge=10, le=3600)
+    calmness_before: int = Field(default=3, ge=1, le=5)
+    calmness_after: int = Field(default=3, ge=1, le=5)
+
+
+class BreatheSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    technique: str
+    cycles_completed: int
+    duration_seconds: int
+    calmness_before: int
+    calmness_after: int
+    xp_earned: int
+    created_at: datetime
+
+
+# ---------- KPIs ----------
+class KPIOut(BaseModel):
+    """Real-time computed KPIs for the current user."""
+    momentum_index: float          # 0-100 (streak × focus × completion)
+    avoidance_resistance: float    # 0-100 (lower latency = higher)
+    power_level: float             # 0-100 (energy × completion ratio)
+    chain_strength: int            # longest active chain
+    shield_reserve: int            # unspent shields
+    calm_count_week: int           # breathing sessions this week
+    # Underlying
+    focus_minutes_today: int
+    tasks_completed_today: int
+    tasks_created_today: int
+    avg_mood_week: float
+    avg_energy_week: float
+    avg_action_latency_min: float
+    streak_days: int
+    level: int
+    xp: int

@@ -8,14 +8,19 @@ import {
   ComicPanel, ComicButton, ActionWord, SpeechBubble, ComicBadge, BurstRays,
 } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import {
+  IconBolt, IconFocus, IconStar, IconTarget, IconPlay, IconPause,
+  IconCheck, IconClose, IconDistraction, IconSparkle, IconCoach, IconFlame,
+} from "@/components/comic/comic-icons";
 
 type Mode = "pomodoro" | "short_break" | "long_break" | "deep_work";
 
-const MODES: Record<Mode, { label: string; minutes: number; color: string; emoji: string }> = {
-  pomodoro:    { label: "POW-er Pomodoro",  minutes: 25, color: "#FF4757", emoji: "💥" },
-  short_break: { label: "Quick ZAP Break",  minutes: 5,  color: "#06D6A0", emoji: "⚡" },
-  long_break:  { label: "Big BAM Break",    minutes: 15, color: "#4361EE", emoji: "🌟" },
-  deep_work:   { label: "Deep BOOM Work",   minutes: 50, color: "#FF6B35", emoji: "🧠" },
+const MODES: Record<Mode, { label: string; minutes: number; color: string; Icon: (p: { size?: number }) => JSX.Element }> = {
+  pomodoro:    { label: "POW-er Pomodoro",  minutes: 25, color: "#FF4757", Icon: IconBolt },
+  short_break: { label: "Quick ZAP Break",  minutes: 5,  color: "#06D6A0", Icon: IconPlay },
+  long_break:  { label: "Big BAM Break",    minutes: 15, color: "#4361EE", Icon: IconStar },
+  deep_work:   { label: "Deep BOOM Work",   minutes: 50, color: "#FF6B35", Icon: IconTarget },
 };
 
 export function FocusTimer() {
@@ -36,7 +41,7 @@ export function FocusTimer() {
     api.listTasks("pending").then(setTasks).catch(() => {});
   }, []);
 
-  // Timer tick — only decrements, doesn't call handleComplete
+  // Timer tick
   useEffect(() => {
     if (isRunning && secondsLeft > 0) {
       intervalRef.current = setInterval(() => {
@@ -72,6 +77,7 @@ export function FocusTimer() {
 
   const handleStart = async () => {
     playSound("bam");
+    triggerBang({ variant: "bam", word: "GO!", x: 50, y: 40, size: 220 });
     try {
       const session = await api.createSession({
         task_id: selectedTaskId,
@@ -80,7 +86,7 @@ export function FocusTimer() {
       });
       setCurrentSession(session);
       setIsRunning(true);
-      toast.success(`${MODES[mode].label} started! ${MODES[mode].emoji} GO!`);
+      toast.success(`${MODES[mode].label} started! GO!`);
     } catch (err: any) {
       playSound("error");
       toast.error(err.message);
@@ -113,10 +119,18 @@ export function FocusTimer() {
         focus_quality: 4,
       });
       setCompletedToday(completedToday + 1);
-      toast.success(`BOOM! Session complete! +${actualMinutes * 2} XP 💥`);
+      const xp = mode === "deep_work" ? actualMinutes * 3 : actualMinutes * 2;
+      // Trigger appropriate BANG based on session type
+      if (mode === "deep_work") {
+        triggerBang({ variant: "boom-large", word: "DEEP WORK!", x: 50, y: 35, size: 320 });
+      } else if (mode === "pomodoro") {
+        triggerBang({ variant: "boom", word: "POW!", x: 50, y: 40, size: 260 });
+      } else {
+        triggerBang({ variant: "pow", word: "DONE!", x: 50, y: 40, size: 220 });
+      }
+      toast.success(`BOOM! Session complete! +${xp} XP`);
       playSound("levelup");
       refreshUser();
-      // Reset
       setCurrentSession(null);
       setSecondsLeft(MODES[mode].minutes * 60);
       setDistractions(0);
@@ -148,7 +162,8 @@ export function FocusTimer() {
   const handleDistraction = () => {
     playSound("error");
     setDistractions(d => d + 1);
-    toast.warning("Distraction logged! Re-focus 💪");
+    triggerBang({ variant: "zap", word: "OOPS!", x: 50, y: 60, size: 160 });
+    toast.warning("Distraction logged! Re-focus!");
   };
 
   const formatTime = (s: number) => {
@@ -160,6 +175,7 @@ export function FocusTimer() {
   const progress = ((initialSeconds - secondsLeft) / initialSeconds) * 100;
   const circumference = 2 * Math.PI * 120;
   const dashOffset = circumference - (progress / 100) * circumference;
+  const ModeIcon = MODES[mode].Icon;
 
   return (
     <div className="space-y-4">
@@ -173,20 +189,23 @@ export function FocusTimer() {
 
       {/* Mode selector */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {(Object.keys(MODES) as Mode[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => handleModeChange(m)}
-            className={`p-3 border-2 border-black rounded-lg font-bangers text-sm transition-all ${
-              mode === m ? "shadow-[3px_3px_0_#0A0A0A] -translate-y-0.5" : "bg-white hover:-translate-y-0.5"
-            }`}
-            style={{ background: mode === m ? MODES[m].color : "#FFFFFF", color: mode === m ? "#0A0A0A" : "#0A0A0A" }}
-          >
-            <div className="text-2xl">{MODES[m].emoji}</div>
-            <div className="mt-1">{MODES[m].label}</div>
-            <div className="text-xs font-comic-neue">{MODES[m].minutes} min</div>
-          </button>
-        ))}
+        {(Object.keys(MODES) as Mode[]).map((m) => {
+          const MIcon = MODES[m].Icon;
+          return (
+            <button
+              key={m}
+              onClick={() => handleModeChange(m)}
+              className={`p-3 border-2 border-black rounded-lg font-bangers text-sm transition-all flex flex-col items-center gap-1 ${
+                mode === m ? "shadow-[3px_3px_0_#0A0A0A] -translate-y-0.5" : "bg-white hover:-translate-y-0.5"
+              }`}
+              style={{ background: mode === m ? MODES[m].color : "#FFFFFF", color: "#0A0A0A" }}
+            >
+              <MIcon size={32} />
+              <div>{MODES[m].label}</div>
+              <div className="text-xs font-comic-neue">{MODES[m].minutes} min</div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Timer */}
@@ -197,6 +216,11 @@ export function FocusTimer() {
           <div className="flex justify-center my-6">
             <div className="relative w-72 h-72">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 280 280">
+                <defs>
+                  <pattern id="timer-halftone" width="6" height="6" patternUnits="userSpaceOnUse">
+                    <circle cx="1.5" cy="1.5" r="1.2" fill="rgba(10,10,10,0.18)" />
+                  </pattern>
+                </defs>
                 <circle
                   cx="140" cy="140" r="120"
                   fill="#FFF8DC"
@@ -213,14 +237,27 @@ export function FocusTimer() {
                   strokeDashoffset={dashOffset}
                   style={{ transition: "stroke-dashoffset 1s linear" }}
                 />
+                <circle
+                  cx="140" cy="140" r="120"
+                  fill="none"
+                  stroke="url(#timer-halftone)"
+                  strokeWidth="14"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  style={{ transition: "stroke-dashoffset 1s linear", pointerEvents: "none" }}
+                />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-5xl">{MODES[mode].emoji}</div>
+                <div className="flex justify-center"><ModeIcon size={48} /></div>
                 <div className="font-bangers text-6xl mt-1" style={{ color: MODES[mode].color }}>
                   {formatTime(secondsLeft)}
                 </div>
-                <div className="font-comic-neue text-sm font-bold uppercase">
-                  {isRunning ? "🔥 FOCUSING" : currentSession ? "PAUSED" : "READY"}
+                <div className="font-comic-neue text-sm font-bold uppercase flex items-center gap-1">
+                  {isRunning ? (
+                    <>
+                      <IconFlame size={16} /> FOCUSING
+                    </>
+                  ) : currentSession ? "PAUSED" : "READY"}
                 </div>
               </div>
             </div>
@@ -247,29 +284,41 @@ export function FocusTimer() {
           <div className="flex justify-center gap-2 flex-wrap">
             {!isRunning && !currentSession && (
               <ComicButton color="red" size="lg" sound="bam" onClick={handleStart}>
-                {MODES[mode].emoji} START!
+                <span className="flex items-center gap-2">
+                  <ModeIcon size={22} /> START!
+                </span>
               </ComicButton>
             )}
             {isRunning && (
               <>
                 <ComicButton color="yellow" size="lg" sound="whoosh" onClick={handlePause}>
-                  ⏸ Pause
+                  <span className="flex items-center gap-1">
+                    <IconPause size={20} /> Pause
+                  </span>
                 </ComicButton>
                 <ComicButton color="orange" size="lg" sound="error" onClick={handleDistraction}>
-                  😵 Distracted
+                  <span className="flex items-center gap-1">
+                    <IconDistraction size={20} /> Distracted
+                  </span>
                 </ComicButton>
               </>
             )}
             {!isRunning && currentSession && (
               <>
                 <ComicButton color="green" size="lg" sound="pop" onClick={handleResume}>
-                  ▶ Resume
+                  <span className="flex items-center gap-1">
+                    <IconPlay size={20} /> Resume
+                  </span>
                 </ComicButton>
                 <ComicButton color="red" size="lg" sound="achievement" onClick={handleComplete}>
-                  ✓ Complete Early
+                  <span className="flex items-center gap-1">
+                    <IconCheck size={20} /> Complete Early
+                  </span>
                 </ComicButton>
                 <ComicButton color="white" size="lg" sound="wham" onClick={handleAbandon}>
-                  ✕ Abandon
+                  <span className="flex items-center gap-1">
+                    <IconClose size={20} /> Abandon
+                  </span>
                 </ComicButton>
               </>
             )}
@@ -288,22 +337,28 @@ export function FocusTimer() {
       {/* Tips */}
       <div className="grid md:grid-cols-2 gap-3">
         <SpeechBubble color="yellow" tilt="left">
-          <p className="font-comic-neue font-bold text-black">
-            💡 Pro tip: Silence your phone, close unnecessary tabs, and commit fully.
-            Even 5 minutes of pure focus beats 25 minutes of half-focus!
+          <p className="font-comic-neue font-bold text-black flex items-start gap-2">
+            <IconSparkle size={22} className="flex-shrink-0" />
+            <span>
+              Pro tip: Silence your phone, close unnecessary tabs, and commit fully.
+              Even 5 minutes of pure focus beats 25 minutes of half-focus!
+            </span>
           </p>
         </SpeechBubble>
         {user?.procrastination_type && (
           <SpeechBubble color="white" tilt="right">
-            <p className="font-comic-neue font-bold text-black">
-              🦸 For your <strong>{user.procrastination_type.replace("_", " ")}</strong> type:
-              {" "}
-              {user.procrastination_type === "perfectionist" && "Done is better than perfect — ship it!"}
-              {user.procrastination_type === "dreamer" && "Make it tangible. Ship something real."}
-              {user.procrastination_type === "worrier" && "Small steps. You've got this."}
-              {user.procrastination_type === "crisis_maker" && "No fake urgency needed. Just flow."}
-              {user.procrastination_type === "defier" && "You chose this. Make it yours."}
-              {user.procrastination_type === "overdoer" && "One thing at a time. Breathe."}
+            <p className="font-comic-neue font-bold text-black flex items-start gap-2">
+              <IconCoach size={22} className="flex-shrink-0" />
+              <span>
+                For your <strong>{user.procrastination_type.replace("_", " ")}</strong> type:
+                {" "}
+                {user.procrastination_type === "perfectionist" && "Done is better than perfect — ship it!"}
+                {user.procrastination_type === "dreamer" && "Make it tangible. Ship something real."}
+                {user.procrastination_type === "worrier" && "Small steps. You've got this."}
+                {user.procrastination_type === "crisis_maker" && "No fake urgency needed. Just flow."}
+                {user.procrastination_type === "defier" && "You chose this. Make it yours."}
+                {user.procrastination_type === "overdoer" && "One thing at a time. Breathe."}
+              </span>
             </p>
           </SpeechBubble>
         )}

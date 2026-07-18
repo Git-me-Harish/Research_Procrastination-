@@ -10,14 +10,19 @@ import {
   BurstRays, ComicBadge,
 } from "@/components/comic/comic-ui";
 import { playSound } from "@/lib/sounds";
+import { triggerBang } from "@/components/comic/bang-effect";
+import {
+  IconStar, IconBolt, IconShield, IconFlame, IconBreathe, IconSparkle,
+  IconArrowRight, IconHeart, IconTarget, IconCoach,
+} from "@/components/comic/comic-icons";
 
-const TYPE_COLORS: Record<string, { bg: string; text: string; emoji: string }> = {
-  perfectionist: { bg: "#FFD23F", text: "#0A0A0A", emoji: "💎" },
-  dreamer:       { bg: "#4361EE", text: "#FFFFFF", emoji: "💭" },
-  worrier:       { bg: "#FF6B35", text: "#FFFFFF", emoji: "🛡️" },
-  crisis_maker:  { bg: "#FF4757", text: "#FFFFFF", emoji: "🔥" },
-  defier:        { bg: "#06D6A0", text: "#0A0A0A", emoji: "⚡" },
-  overdoer:      { bg: "#FF69B4", text: "#FFFFFF", emoji: "🃏" },
+const TYPE_COLORS: Record<string, { bg: string; text: string; Icon: (p: { size?: number }) => JSX.Element }> = {
+  perfectionist: { bg: "#FFD23F", text: "#0A0A0A", Icon: IconStar },
+  dreamer:       { bg: "#4361EE", text: "#FFFFFF", Icon: IconBreathe },
+  worrier:       { bg: "#FF6B35", text: "#FFFFFF", Icon: IconShield },
+  crisis_maker:  { bg: "#FF4757", text: "#FFFFFF", Icon: IconFlame },
+  defier:        { bg: "#06D6A0", text: "#0A0A0A", Icon: IconBolt },
+  overdoer:      { bg: "#FF69B4", text: "#FFFFFF", Icon: IconHeart },
 };
 
 export function OnboardingFlow() {
@@ -81,6 +86,7 @@ export function OnboardingFlow() {
       setResult(winner);
       setSubmitting(false);
       playSound("achievement");
+      triggerBang({ variant: "kapow", word: winner.toUpperCase() + "!", x: 50, y: 35, size: 320 });
       // Don't refreshUser() yet — wait for the user to click "Enter HQ" so they see their result reveal
     } catch (err: any) {
       playSound("error");
@@ -114,7 +120,7 @@ export function OnboardingFlow() {
           tilt="3l"
           style={{ background: colors.bg, color: colors.text }}
         >
-          <div className="text-7xl mb-3">{colors.emoji}</div>
+          <div className="flex justify-center mb-3"><colors.Icon size={80} /></div>
           <p className="font-bangers text-2xl mb-2">YOUR TYPE IS...</p>
           <ActionWord
             word={result.replace("_", " ").toUpperCase() + "!"}
@@ -129,7 +135,7 @@ export function OnboardingFlow() {
             </p>
           </SpeechBubble>
           <div className="mt-6 mb-4">
-            <ComicBadge color="yellow">⭐ XP +50 — Welcome bonus!</ComicBadge>
+            <ComicBadge color="yellow"><span className="flex items-center gap-1"><IconStar size={14} /> XP +50 — Welcome bonus!</span></ComicBadge>
           </div>
           <ComicButton
             color="red"
@@ -137,10 +143,11 @@ export function OnboardingFlow() {
             sound="bam"
             onClick={() => {
               playSound("levelup");
-              refreshUser();  // triggers BamApp to route to dashboard
+              triggerBang({ variant: "levelup", word: "ENTERED!", x: 50, y: 40, size: 240 });
+              refreshUser();
             }}
           >
-            ENTER MY HQ! →
+            <span className="flex items-center gap-2">ENTER MY HQ! <IconArrowRight size={22} /></span>
           </ComicButton>
         </ComicPanel>
       </div>
@@ -224,9 +231,9 @@ export function OnboardingFlow() {
         {/* Tip */}
         <div className="mt-8">
           <SpeechBubble color="white" tilt="left">
-            <p className="font-comic-neue text-sm font-bold text-black">
-              💡 Tip: Answer honestly — there are no wrong answers! We'll craft a
-              personalized plan based on your unique procrastination style.
+            <p className="font-comic-neue text-sm font-bold text-black flex items-start gap-2">
+              <IconSparkle size={22} className="flex-shrink-0" />
+              <span>Tip: Answer honestly — there are no wrong answers! We'll craft a personalized plan based on your unique procrastination style.</span>
             </p>
           </SpeechBubble>
         </div>
@@ -243,7 +250,7 @@ export function OnboardingFlow() {
                 playSound("click");
               }}
             >
-              ← Back
+              <span className="flex items-center gap-1">← Back</span>
             </ComicButton>
           </div>
         )}

@@ -6,10 +6,12 @@ import { playSound } from "@/lib/sounds";
 
 // ============ ComicPanel ============
 interface ComicPanelProps extends HTMLAttributes<HTMLDivElement> {
-  color?: "white" | "yellow" | "red" | "blue" | "green" | "orange" | "pink" | "cream";
+  color?: "white" | "yellow" | "red" | "blue" | "green" | "orange" | "pink" | "cream" | "purple" | "ink";
   tilt?: "none" | "left" | "right" | "3l" | "3r";
   hoverable?: boolean;
   halftone?: boolean;
+  textured?: boolean; // use textured color background instead of flat
+  burst?: boolean;    // add subtle radial burst pattern
 }
 
 const panelColors: Record<string, string> = {
@@ -20,7 +22,22 @@ const panelColors: Record<string, string> = {
   green: "bg-[#06D6A0]",
   orange: "bg-[#FF6B35] text-white",
   pink: "bg-[#FF69B4] text-white",
+  purple: "bg-[#9B5DE5] text-white",
   cream: "bg-[#FFF8DC]",
+  ink: "bg-[#0A0A0A] text-[#FFD23F]",
+};
+
+const panelTextures: Record<string, string> = {
+  white: "comic-paper-cream",
+  yellow: "comic-textured-yellow",
+  red: "comic-textured-red",
+  blue: "comic-textured-blue",
+  green: "comic-textured-green",
+  orange: "comic-textured-orange",
+  pink: "comic-textured-pink",
+  purple: "comic-textured-purple",
+  cream: "comic-paper-warm",
+  ink: "comic-textured-ink",
 };
 
 const tilts: Record<string, string> = {
@@ -37,17 +54,20 @@ export function ComicPanel({
   tilt = "none",
   hoverable = false,
   halftone = false,
+  textured = true,
+  burst = false,
   className,
   ...props
 }: ComicPanelProps) {
   return (
     <div
       className={cn(
-        "comic-panel-flat p-5",
-        panelColors[color],
+        "comic-panel-flat p-5 relative overflow-hidden",
+        textured ? panelTextures[color] : panelColors[color],
         tilts[tilt],
         hoverable && "comic-panel cursor-pointer",
         halftone && "halftone",
+        burst && "comic-burst-bg",
         className,
       )}
       {...props}
