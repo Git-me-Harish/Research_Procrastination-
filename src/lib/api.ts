@@ -75,6 +75,53 @@ export interface TokenOut {
   user: User;
 }
 
+export interface UserUpdate {
+  display_name?: string;
+  sound_enabled?: boolean;
+  theme?: string;
+}
+
+export interface ProfileActivityItem {
+  kind: string;
+  title: string;
+  detail: string | null;
+  timestamp: string;
+  xp: number;
+}
+
+export interface ProfileSummary {
+  user: User;
+  level: number;
+  xp: number;
+  xp_into_level: number;
+  xp_for_next_level: number;
+  xp_to_next_level: number;
+  next_level: number;
+  progress_pct: number;
+
+  total_tasks: number;
+  tasks_completed: number;
+  tasks_pending: number;
+  total_focus_minutes: number;
+  total_focus_sessions: number;
+  total_breathe_sessions: number;
+  total_breathe_minutes: number;
+  total_chains: number;
+  total_chain_completions: number;
+  longest_chain: number;
+  total_shields_earned: number;
+  total_shields_spent: number;
+  achievements_earned: number;
+  achievements_total: number;
+  mood_entries: number;
+  ai_interactions: number;
+  member_since: string;
+  days_active: number;
+  procrastination_type: string;
+  onboarding_completed_at: string | null;
+  recent_activity: ProfileActivityItem[];
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -341,4 +388,11 @@ export const api = {
   // KPIs
   getKPIs: () => apiFetch<KPIs>("/kpis"),
   kpiHistory: (days = 14) => apiFetch<{ days: any[] }>(`/kpis/history?days=${days}`),
+
+  // Profile
+  updateMe: (data: UserUpdate) =>
+    apiFetch<User>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }),
+  profileSummary: () => apiFetch<ProfileSummary>("/profile/summary"),
+  retakeOnboarding: () =>
+    apiFetch<User>("/onboarding/retake", { method: "POST", body: JSON.stringify({}) }),
 };

@@ -11,9 +11,12 @@ from models import (
 )
 
 
-# XP needed for level N = 100 * N^1.5 (rough curve)
+# XP needed for level N = 100 * (N-1)^1.5 (rough curve). Level 1 starts at 0 XP.
 def xp_for_level(level: int) -> int:
-    return int(100 * (level ** 1.5))
+    """Total XP required to REACH `level`. Level 1 = 0 XP (everyone starts there)."""
+    if level <= 1:
+        return 0
+    return int(100 * ((level - 1) ** 1.5))
 
 
 def level_from_xp(xp: int) -> tuple[int, int]:

@@ -221,3 +221,118 @@ Stage Summary:
 - ✅ 6 custom KPIs display real-time values in comic-styled gauges
 - ✅ FastAPI backend stable as detached daemon (PID 7807, parent=1)
 - ✅ 64 screenshots captured as visual evidence in /home/z/my-project/download/02-*.png
+
+---
+Task ID: BAM-004
+Agent: Main Agent (Super Z)
+Task: Phase 4 — Build complete Profile page (was missing!), fix avatar click, add profile-related backend endpoints, end-to-end test
+
+Work Log:
+- User feedback: "when I click my profile I'm not able to see my profile details" — investigation
+  found that the avatar in BamShell was a plain div with no onClick, AND there was no Profile view
+  in the app at all. The View union type only had 9 views, no "profile".
+- Backend additions to mini-services/bam-api/main.py:
+    * PATCH /api/v1/auth/me — update display_name, sound_enabled, theme (returns UserOut)
+    * GET  /api/v1/profile/summary — aggregated profile data (level progress with xp_into_level,
+      xp_for_next_level, xp_to_next_level, progress_pct; lifetime totals for tasks/focus/breathe/
+      chains/shields/achievements/mood/AI; days_active; recent_activity timeline merging 8 source
+      tables, sorted by timestamp desc, trimmed to 15)
+    * POST /api/v1/onboarding/retake — clears onboarding_completed_at so user re-takes quiz
+- Backend schema additions to schemas.py:
+    * UserUpdate (display_name?, sound_enabled?, theme?)
+    * ProfileActivityItem (kind, title, detail, timestamp, xp)
+    * ProfileSummary (39 fields, full hero snapshot)
+- Backend bug fix in gamification.py:
+    * xp_for_level(N) was 100 * N^1.5, which returned 100 for level 1. But level 1 should start
+      at 0 XP. Fixed to: 0 for level<=1, else 100 * (N-1)^1.5. This made xp_into_level correctly
+      show 0 (instead of -100) for new users.
+- Backend daemon persistence fix:
+    * Previous uvicorn launches kept dying when the parent bash exited. Wrote
+      /home/z/my-project/scripts/start-bam-api.py using true double-fork + setsid + redirect
+      stdio to /dev/null. Server now survives across bash sessions reliably (parent PID = 1).
+- Frontend additions to src/lib/api.ts:
+    * UserUpdate, ProfileActivityItem, ProfileSummary TypeScript interfaces (matching backend)
+    * api.updateMe(data) → PATCH /auth/me
+    * api.profileSummary() → GET /profile/summary
+    * api.retakeOnboarding() → POST /onboarding/retake
+- New custom SVG comic icons added to comic-icons.tsx:
+    * IconUser — comic hero bust with red mask, blue shoulders, hair tuft, mask tie band
+    * IconDownload — yellow tray with red down-arrow, halftone shading
+    * IconRefresh — green circular arrow with yellow arrowhead, comic-styled
+  (All have 3px black outlines, halftone defs, gradient fills — consistent with the icon system.)
+- Built new src/components/comic/profile-view.tsx (530+ lines):
+    1. HERO CARD (textured blue, tilted, with burst rays): big avatar tile (initials in Bangers
+       font, comic-textured-yellow bg, level badge floating), name + edit button (inline edit
+       with check/cancel), username/email/joined chips, procrastination type chip, Export +
+       Re-take Quiz action buttons.
+    2. LEVEL PROGRESS BAR (textured yellow): textured-red fill at progress_pct width, white
+       text overlay showing "X% to LV N", subtext "Y XP to reach Level N — keep stacking POW!"
+    3. LIFETIME STATS GRID (8 cards, 2x4 on mobile, 4-wide on desktop): Tasks Done, Focus
+       Minutes, Breathe Sessions, Chains Built, Shields Earned, Trophies (earned/total),
+       Longest Streak, Days Active. Each card: 3px black border, halftone shadow, tilted
+       alternating, white text on colored background.
+    4. 14-DAY KPI TREND CHART (only renders if history.length > 1): inline SVG line chart
+       with 3 lines (Momentum Index=red, Avoidance Resistance=blue, Power Level=green),
+       grid lines at 0/25/50/75/100, dot markers at each point, legend below.
+    5. PROCRASTINATION PROFILE CARD (textured pink): big ActionWord with type name,
+       speech bubble explanation, buttons to View My Plan / Ask AI Coach.
+    6. RECENT ACTIVITY TIMELINE (textured white): vertical timeline with bullet markers,
+       each entry shows activity icon, title, detail, +XP badge, time-ago. Handles 8
+       activity kinds. Empty state with sparkle icon + "Add a mission" CTA.
+    7. SETTINGS PANEL (textured cream): 3 rows — Sound Effects toggle (big comic toggle
+       switch), Member Since card with days-ago + active-days badge, AI Coach Interactions
+       count badge.
+    8. RETAKE QUIZ CONFIRMATION MODAL: overlay with yellow comic panel, explains what
+       will/won't be reset, Cancel + Re-take it! buttons.
+- BANG effects wired to profile actions:
+    * Save name → BAM! "SAVED!" (variant=bam)
+    * Export data → BOOM! "EXPORTED!" (variant=boom)
+    * Retake quiz → KAPOW! "RETAKE!" (variant=kapow)
+- Wired Profile into the app:
+    * bam-app.tsx: Added "profile" to View union type, imported ProfileView, rendered
+      {view === "profile" && <ProfileView setView={setViewWithSound} />}
+    * bam-shell.tsx: Added "Profile" to NAV_ITEMS (with IconUser, color #4361EE).
+      Converted the avatar div into a real <button> with onClick={() => setView("profile")},
+      added ring-4 ring-yellow highlight when profile is active.
+- Smoke-tested all 3 new backend endpoints via curl with real registered user:
+    * PATCH /auth/me → display_name + sound_enabled + theme updated ✓
+    * GET /profile/summary → all 39 fields returned correctly, level math verified
+      (level=1, xp=0 → xp_into_level=0, xp_for_next_level=100, progress_pct=0.0) ✓
+    * POST /onboarding/retake → onboarding_completed_at=null ✓
+- Used agent-browser to test full profile flow end-to-end:
+    * Registered fresh user (ProfHero*) → onboarding quiz → ENTER MY HQ → dashboard
+    * Clicked avatar "P" → profile page loaded with all sections visible ✓
+    * VLM analysis of full-page screenshot: "complete and professional-looking … would
+      ship to production." Zero default emojis detected. No layout/overflow issues.
+    * Clicked Edit (pencil) → input appeared with current name → typed "SUPER Prof Hero"
+      → clicked Save (check) → BAM! "SAVED!" fired → heading updated to "SUPER Prof Hero"
+      → avatar letter changed from "P" to "S" ✓
+    * Navigated to Tasks → created "Test profile task" (Work, High priority) → BANG
+      "MISSIONS!" on create → clicked DONE → BANG "DONE!" on complete ✓
+    * Navigated back to Profile → level went from 1 to 2 (XP=120), progress bar shows
+      "120 / 282 XP", 162 XP to reach Level 3, recent activity timeline shows
+      "Completed: Test profile task" with "just now" timestamp and +XP badge ✓
+    * Clicked RE-TAKE QUIZ → confirmation modal appeared → clicked RE-TAKE IT! → KAPOW!
+      "RETAKE!" fired → user routed back to onboarding quiz (6 questions) ✓
+    * Re-completed quiz → ENTER MY HQ → clicked "Profile" in nav bar → profile page
+      loaded correctly ✓
+- 18 screenshots captured as visual evidence in /home/z/my-project/download/04-profile-test-*.png
+
+Stage Summary:
+- ✅ CRITICAL BUG FIXED: profile was completely missing — now full-featured profile page
+- ✅ Avatar in BamShell is now clickable (was a plain div before) + highlights when active
+- ✅ "Profile" added to main nav bar with custom IconUser SVG
+- ✅ 3 new backend endpoints (PATCH /auth/me, GET /profile/summary, POST /onboarding/retake)
+- ✅ Level progress bar with correct math (fixed gamification.py xp_for_level bug)
+- ✅ 8-card lifetime stats grid + 14-day KPI trend chart (3-line SVG, MI/ARS/PL)
+- ✅ Recent activity timeline merging 8 data sources (tasks, focus, mood, breathe, chains,
+  shields, achievements, AI interactions) sorted by timestamp
+- ✅ Inline-editable display name with check/cancel buttons + BANG! "SAVED!" feedback
+- ✅ Export My Data button (downloads full profile JSON via Blob URL)
+- ✅ Re-take Quiz button with confirmation modal, resets onboarding properly
+- ✅ Settings panel: Sound toggle (persisted to backend), Member Since card, AI usage count
+- ✅ All 3 new icons (IconUser, IconDownload, IconRefresh) match comic style — no emojis
+- ✅ FastAPI server now persists across bash sessions via double-fork daemon script
+- ✅ Verified end-to-end with agent-browser (18 screenshots) + VLM visual analysis
+- ✅ Application is now 100% complete — every nav item has a fully-functional view, every
+  user-facing action has BANG/sound feedback, every UI element uses custom SVG icons

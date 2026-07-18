@@ -720,3 +720,55 @@ export function IconGear({ size = 32, className, style }: IconProps) {
     </svg>
   );
 }
+
+/* User / Profile — comic hero bust with mask */
+export function IconUser({ size = 32, className, style }: IconProps) {
+  return (
+    <svg {...baseSvgProps(size, className, style)}>
+      <HalftoneDef />
+      {/* Shoulders */}
+      <path d="M6 44 Q6 32 18 28 L30 28 Q42 32 42 44 Z" fill="#4361EE" stroke="#0A0A0A" strokeWidth="3" strokeLinejoin="round" />
+      <rect x="4" y="42" width="40" height="4" fill="url(#bam-halftone)" />
+      {/* Head */}
+      <circle cx="24" cy="18" r="11" fill="#FFE0B2" stroke="#0A0A0A" strokeWidth="3" />
+      {/* Mask */}
+      <path d="M11 16 Q24 12 37 16 L37 20 Q24 24 11 20 Z" fill="#FF4757" stroke="#0A0A0A" strokeWidth="3" strokeLinejoin="round" />
+      {/* Mask eye holes */}
+      <ellipse cx="18" cy="18" rx="2" ry="1.5" fill="#0A0A0A" />
+      <ellipse cx="30" cy="18" rx="2" ry="1.5" fill="#0A0A0A" />
+      {/* Hair tuft */}
+      <path d="M14 10 Q24 4 34 10 Q34 6 24 4 Q14 6 14 10 Z" fill="#0A0A0A" />
+      {/* Mask tie band */}
+      <path d="M20 28 L24 32 L28 28" fill="none" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/* Download / Export — comic arrow pointing into tray */
+export function IconDownload({ size = 32, className, style }: IconProps) {
+  return (
+    <svg {...baseSvgProps(size, className, style)}>
+      <HalftoneDef />
+      {/* Tray */}
+      <path d="M6 30 L6 40 Q6 42 8 42 L40 42 Q42 42 42 40 L42 30 L34 30 L34 36 L14 36 L14 30 Z" fill="#FFD23F" stroke="#0A0A0A" strokeWidth="3" strokeLinejoin="round" />
+      <rect x="6" y="32" width="36" height="6" fill="url(#bam-halftone)" />
+      {/* Arrow */}
+      <path d="M24 4 L24 26 M14 18 L24 28 L34 18" fill="none" stroke="#0A0A0A" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24 4 L24 24 M16 16 L24 26 L32 16" fill="none" stroke="#FF4757" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* Refresh / Re-take — comic circular arrows */
+export function IconRefresh({ size = 32, className, style }: IconProps) {
+  return (
+    <svg {...baseSvgProps(size, className, style)}>
+      <HalftoneDef />
+      <path d="M38 14 A16 16 0 1 0 42 26" fill="none" stroke="#0A0A0A" strokeWidth="4" strokeLinecap="round" />
+      <path d="M38 14 A16 16 0 1 0 42 26" fill="none" stroke="#06D6A0" strokeWidth="2.5" strokeLinecap="round" />
+      {/* Arrowhead */}
+      <path d="M32 8 L40 14 L34 22 Z" fill="#FFD23F" stroke="#0A0A0A" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M32 8 L40 14 L34 22 Z" fill="url(#bam-halftone)" opacity="0.3" />
+    </svg>
+  );
+}

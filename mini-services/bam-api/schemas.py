@@ -44,6 +44,63 @@ class TokenOut(BaseModel):
     user: UserOut
 
 
+# ---------- Profile update + summary ----------
+class UserUpdate(BaseModel):
+    """Partial update for the current user's profile."""
+    display_name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    sound_enabled: Optional[bool] = None
+    theme: Optional[str] = Field(default=None, min_length=1, max_length=40)
+
+
+class ProfileActivityItem(BaseModel):
+    """A single entry in the user's recent activity feed."""
+    kind: str               # task_completed | focus_session | mood_logged | breathe_session | chain_completed | shield_earned | achievement_earned | ai_interaction
+    title: str
+    detail: Optional[str] = None
+    timestamp: datetime
+    xp: int = 0
+
+
+class ProfileSummary(BaseModel):
+    """Aggregated profile data for the Profile view."""
+    user: UserOut
+    # Level progress
+    level: int
+    xp: int
+    xp_into_level: int          # XP earned since reaching current level
+    xp_for_next_level: int      # total XP needed to advance from current level to next
+    xp_to_next_level: int       # remaining XP to next level
+    next_level: int
+    progress_pct: float         # 0-100 progress within current level
+
+    # Lifetime totals
+    total_tasks: int
+    tasks_completed: int
+    tasks_pending: int
+    total_focus_minutes: int
+    total_focus_sessions: int
+    total_breathe_sessions: int
+    total_breathe_minutes: int
+    total_chains: int
+    total_chain_completions: int
+    longest_chain: int
+    total_shields_earned: int
+    total_shields_spent: int
+    achievements_earned: int
+    achievements_total: int
+    mood_entries: int
+    ai_interactions: int
+    member_since: datetime
+    days_active: int             # distinct dates with any activity
+
+    # Procrastination profile
+    procrastination_type: str
+    onboarding_completed_at: Optional[datetime]
+
+    # Recent activity (last 15 across all sources)
+    recent_activity: list[ProfileActivityItem]
+
+
 # ---------- Onboarding ----------
 class OnboardingAnswer(BaseModel):
     question_id: str

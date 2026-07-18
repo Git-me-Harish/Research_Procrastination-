@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, Integer
 
 from config import settings
 from database import get_db, init_db
@@ -17,6 +17,7 @@ from models import (
 )
 from schemas import (
     UserCreate, UserLogin, UserOut, TokenOut, OnboardingSubmit,
+    UserUpdate, ProfileSummary, ProfileActivityItem,
     TaskCreate, TaskUpdate, TaskOut, FocusSessionCreate, FocusSessionUpdate,
     FocusSessionOut, MoodEntryCreate, MoodEntryOut, AchievementOut,
     UserAchievementOut, AIBreakdownRequest, AIBreakdownResponse,
@@ -29,7 +30,7 @@ from schemas import (
 from security import (
     hash_password, verify_password, create_access_token, get_current_user
 )
-from gamification import add_xp, update_streak, evaluate_achievements
+from gamification import add_xp, update_streak, evaluate_achievements, xp_for_level
 from ai_service import generate_task_breakdown, generate_personalized_plan, ai_coach_chat
 from onboarding import get_quiz_questions, get_type_info, apply_onboarding
 from kpi_engine import compute_all_kpis, award_shield
@@ -98,6 +99,271 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
 @app.get(f"{settings.API_V1_PREFIX}/auth/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
     return user
+
+
+@app.patch(f"{settings.API_V1_PREFIX}/auth/me", response_model=UserOut)
+def update_me(
+    payload: UserUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update the current user's profile (display name, sound, theme)."""
+    if payload.display_name is not None:
+        user.display_name = payload.display_name.strip()
+    if payload.sound_enabled is not None:
+        user.sound_enabled = payload.sound_enabled
+    if payload.theme is not None:
+        user.theme = payload.theme
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@app.post(f"{settings.API_V1_PREFIX}/onboarding/retake", response_model=UserOut)
+def retake_onboarding(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reset onboarding so the user can re-take the procrastination-type quiz.
+
+    The existing personalized_plan and procrastination_type are kept until the
+    user submits the new quiz answers via /onboarding/submit.
+    """
+    user.onboarding_completed_at = None
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@app.get(f"{settings.API_V1_PREFIX}/profile/summary", response_model=ProfileSummary)
+def profile_summary(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Aggregated profile data — lifetime totals, level progress, recent activity."""
+    # ---- Level progress ----
+    cur_level_xp = xp_for_level(user.level)
+    next_level = user.level + 1
+    next_level_xp = xp_for_level(next_level)
+    xp_into_level = user.xp - cur_level_xp
+    xp_for_next_level = next_level_xp - cur_level_xp
+    xp_to_next_level = max(0, next_level_xp - user.xp)
+    progress_pct = (xp_into_level / xp_for_next_level * 100) if xp_for_next_level > 0 else 100
+    progress_pct = max(0, min(100, progress_pct))
+
+    # ---- Task totals ----
+    total_tasks = db.query(func.count(Task.id)).filter(Task.user_id == user.id).scalar() or 0
+    tasks_completed = db.query(func.count(Task.id)).filter(
+        Task.user_id == user.id, Task.status == TaskStatus.COMPLETED
+    ).scalar() or 0
+    tasks_pending = total_tasks - tasks_completed
+
+    # ---- Focus totals ----
+    focus_agg = db.query(
+        func.coalesce(func.sum(FocusSession.actual_minutes), 0),
+        func.count(FocusSession.id),
+    ).filter(
+        FocusSession.user_id == user.id,
+        FocusSession.status == SessionStatus.COMPLETED
+    ).one()
+    total_focus_minutes = int(focus_agg[0] or 0)
+    total_focus_sessions = int(focus_agg[1] or 0)
+
+    # ---- Breathe totals ----
+    breathe_agg = db.query(
+        func.count(BreatheSession.id),
+        func.coalesce(func.sum(BreatheSession.duration_seconds), 0),
+    ).filter(BreatheSession.user_id == user.id).one()
+    total_breathe_sessions = int(breathe_agg[0] or 0)
+    total_breathe_minutes = int((breathe_agg[1] or 0) // 60)
+
+    # ---- Chain totals ----
+    chain_agg = db.query(
+        func.count(PowerChain.id),
+        func.coalesce(func.sum(PowerChain.total_completions), 0),
+        func.coalesce(func.max(PowerChain.longest_chain_days), 0),
+    ).filter(PowerChain.user_id == user.id).one()
+    total_chains = int(chain_agg[0] or 0)
+    total_chain_completions = int(chain_agg[1] or 0)
+    longest_chain = int(chain_agg[2] or 0)
+
+    # ---- Shield totals ----
+    shield_agg = db.query(
+        func.count(StreakShield.id),
+        func.coalesce(func.sum(StreakShield.is_spent.cast(Integer)), 0),
+    ).filter(StreakShield.user_id == user.id).one()
+    total_shields_earned = int(shield_agg[0] or 0)
+    total_shields_spent = int(shield_agg[1] or 0)
+
+    # ---- Achievements ----
+    achievements_earned = db.query(func.count(UserAchievement.id)).filter(
+        UserAchievement.user_id == user.id
+    ).scalar() or 0
+    achievements_total = db.query(func.count(Achievement.id)).scalar() or 0
+
+    # ---- Mood + AI ----
+    mood_entries = db.query(func.count(MoodEntry.id)).filter(
+        MoodEntry.user_id == user.id
+    ).scalar() or 0
+    ai_interactions = db.query(func.count(AIInteraction.id)).filter(
+        AIInteraction.user_id == user.id
+    ).scalar() or 0
+
+    # ---- Days active (distinct dates from all activity tables) ----
+    task_dates = db.query(func.distinct(func.date(Task.created_at))).filter(
+        Task.user_id == user.id
+    ).all()
+    focus_dates = db.query(func.distinct(func.date(FocusSession.started_at))).filter(
+        FocusSession.user_id == user.id
+    ).all()
+    mood_dates = db.query(func.distinct(func.date(MoodEntry.created_at))).filter(
+        MoodEntry.user_id == user.id
+    ).all()
+    breathe_dates = db.query(func.distinct(func.date(BreatheSession.created_at))).filter(
+        BreatheSession.user_id == user.id
+    ).all()
+    all_dates = set()
+    for rows in (task_dates, focus_dates, mood_dates, breathe_dates):
+        for (d,) in rows:
+            if d:
+                all_dates.add(str(d))
+    days_active = len(all_dates)
+
+    # ---- Recent activity feed (merge last 15 across sources) ----
+    activity: list[ProfileActivityItem] = []
+
+    # Tasks completed
+    for t in db.query(Task).filter(
+        Task.user_id == user.id, Task.status == TaskStatus.COMPLETED, Task.completed_at.isnot(None)
+    ).order_by(Task.completed_at.desc()).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="task_completed",
+            title=f"Completed: {t.title}",
+            detail=f"{t.actual_minutes or 0}m actual / {t.estimated_minutes or 0}m est",
+            timestamp=t.completed_at,
+            xp=25 + (t.difficulty or 2) * 10 + (t.estimated_minutes or 25),
+        ))
+
+    # Focus sessions completed
+    for s in db.query(FocusSession).filter(
+        FocusSession.user_id == user.id, FocusSession.status == SessionStatus.COMPLETED
+    ).order_by(FocusSession.ended_at.desc()).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="focus_session",
+            title=f"{s.session_type.replace('_',' ').title()} — {s.actual_minutes}m",
+            detail=f"Quality {s.focus_quality}/5 · Distractions {s.distractions}",
+            timestamp=s.ended_at or s.started_at,
+            xp=(s.actual_minutes or 0) * (3 if s.session_type == SessionType.DEEP_WORK else 2),
+        ))
+
+    # Mood logs
+    for m in db.query(MoodEntry).filter(MoodEntry.user_id == user.id).order_by(
+        MoodEntry.created_at.desc()
+    ).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="mood_logged",
+            title=f"Mood {m.mood_score}/5 · Energy {m.energy_score}/5",
+            detail=", ".join(m.triggers) if m.triggers else None,
+            timestamp=m.created_at,
+            xp=5,
+        ))
+
+    # Breathe sessions
+    for b in db.query(BreatheSession).filter(BreatheSession.user_id == user.id).order_by(
+        BreatheSession.created_at.desc()
+    ).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="breathe_session",
+            title=f"Breathe: {b.technique.replace('_','-')} · {b.cycles_completed} cycles",
+            detail=f"Calm {b.calmness_before}→{b.calmness_after} · {b.duration_seconds}s",
+            timestamp=b.created_at,
+            xp=b.xp_earned or 0,
+        ))
+
+    # Chain completions (use last_completed_date on chains)
+    for c in db.query(PowerChain).filter(
+        PowerChain.user_id == user.id, PowerChain.last_completed_date.isnot(None)
+    ).order_by(PowerChain.last_completed_date.desc()).limit(10).all():
+        ts = datetime.strptime(c.last_completed_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        activity.append(ProfileActivityItem(
+            kind="chain_completed",
+            title=f"Chain day: {c.title}",
+            detail=f"Day {c.current_chain_days} (best: {c.longest_chain_days})",
+            timestamp=ts,
+            xp=50,
+        ))
+
+    # Shield earned
+    for sh in db.query(StreakShield).filter(StreakShield.user_id == user.id).order_by(
+        StreakShield.earned_at.desc()
+    ).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="shield_earned",
+            title=f"{sh.rarity.title()} {sh.shield_color.title()} shield",
+            detail=sh.source_detail or sh.source,
+            timestamp=sh.earned_at,
+            xp=0,
+        ))
+
+    # Achievement earned
+    for ua in db.query(UserAchievement).filter(UserAchievement.user_id == user.id).order_by(
+        UserAchievement.earned_at.desc()
+    ).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="achievement_earned",
+            title=f"Trophy: {ua.achievement.title}",
+            detail=ua.achievement.description,
+            timestamp=ua.earned_at,
+            xp=ua.achievement.xp_reward or 0,
+        ))
+
+    # AI interactions
+    for ai in db.query(AIInteraction).filter(AIInteraction.user_id == user.id).order_by(
+        AIInteraction.created_at.desc()
+    ).limit(10).all():
+        activity.append(ProfileActivityItem(
+            kind="ai_interaction",
+            title=f"AI {ai.interaction_type}",
+            detail=ai.model_used,
+            timestamp=ai.created_at,
+            xp=0,
+        ))
+
+    # Sort by timestamp desc and trim to 15
+    activity.sort(key=lambda a: a.timestamp, reverse=True)
+    activity = activity[:15]
+
+    return ProfileSummary(
+        user=user,
+        level=user.level,
+        xp=user.xp,
+        xp_into_level=xp_into_level,
+        xp_for_next_level=xp_for_next_level,
+        xp_to_next_level=xp_to_next_level,
+        next_level=next_level,
+        progress_pct=progress_pct,
+        total_tasks=total_tasks,
+        tasks_completed=tasks_completed,
+        tasks_pending=tasks_pending,
+        total_focus_minutes=total_focus_minutes,
+        total_focus_sessions=total_focus_sessions,
+        total_breathe_sessions=total_breathe_sessions,
+        total_breathe_minutes=total_breathe_minutes,
+        total_chains=total_chains,
+        total_chain_completions=total_chain_completions,
+        longest_chain=longest_chain,
+        total_shields_earned=total_shields_earned,
+        total_shields_spent=total_shields_spent,
+        achievements_earned=achievements_earned,
+        achievements_total=achievements_total,
+        mood_entries=mood_entries,
+        ai_interactions=ai_interactions,
+        member_since=user.created_at,
+        days_active=days_active,
+        procrastination_type=user.procrastination_type.value if user.procrastination_type else "unknown",
+        onboarding_completed_at=user.onboarding_completed_at,
+        recent_activity=activity,
+    )
 
 
 # ============================================================

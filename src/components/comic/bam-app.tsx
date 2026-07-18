@@ -16,6 +16,7 @@ import { PowerChainView } from "@/components/comic/power-chain";
 import { StreakShieldView } from "@/components/comic/streak-shield";
 import { BreatheOverlay } from "@/components/comic/breathe-overlay";
 import { BamShell } from "@/components/comic/bam-shell";
+import { ProfileView } from "@/components/comic/profile-view";
 import { IconBreathe } from "@/components/comic/comic-icons";
 
 export type View =
@@ -27,7 +28,8 @@ export type View =
   | "mood"
   | "plan"
   | "chains"
-  | "shields";
+  | "shields"
+  | "profile";
 
 export function BamApp() {
   const { user, token, refreshUser } = useBamStore();
@@ -96,6 +98,7 @@ export function BamApp() {
         {view === "plan" && <PersonalizedPlan />}
         {view === "chains" && <PowerChainView />}
         {view === "shields" && <StreakShieldView />}
+        {view === "profile" && <ProfileView setView={setViewWithSound} />}
       </BamShell>
       {showBreathe && <BreatheOverlay onClose={() => setShowBreathe(false)} />}
     </>

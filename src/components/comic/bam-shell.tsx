@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import {
   IconHQ, IconTask, IconFocus, IconCoach, IconPlan, IconTrophy, IconMood,
   IconChain, IconShield, IconSoundOn, IconSoundOff, IconLogout, IconMenu, IconClose,
-  IconStar, IconFlame, IconBreathe,
+  IconStar, IconFlame, IconBreathe, IconUser,
 } from "@/components/comic/comic-icons";
 
 interface NavItem {
@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "plan",         label: "My Plan",       Icon: IconPlan,  color: "#FF69B4", sound: "whoosh" },
   { id: "achievements", label: "Trophies",      Icon: IconTrophy,color: "#FFD23F", sound: "achievement" },
   { id: "mood",         label: "Mood",          Icon: IconMood,  color: "#06D6A0", sound: "pop" },
+  { id: "profile",      label: "Profile",       Icon: IconUser,  color: "#4361EE", sound: "pop" },
 ];
 
 interface BamShellProps {
@@ -133,11 +134,15 @@ export function BamShell({ view, setView, children, onOpenBreathe }: BamShellPro
               {soundOn ? <IconSoundOn size={22} /> : <IconSoundOff size={22} />}
             </button>
 
-            {/* User avatar */}
+            {/* User avatar — clickable, opens Profile */}
             {user && (
-              <div className="hidden sm:flex w-9 h-9 items-center justify-center bg-[#4361EE] text-white border-2 border-black rounded-full shadow-[2px_2px_0_#0A0A0A] font-bangers">
+              <button
+                onClick={() => setView("profile")}
+                className={`hidden sm:flex w-9 h-9 items-center justify-center bg-[#4361EE] text-white border-2 border-black rounded-full shadow-[2px_2px_0_#0A0A0A] font-bangers hover:shadow-[1px_1px_0_#0A0A0A] hover:translate-x-0.5 hover:translate-y-0.5 transition-all ${view === "profile" ? "ring-4 ring-[#FFD23F]" : ""}`}
+                title="View profile"
+              >
                 {user.display_name?.[0]?.toUpperCase() || user.username[0]?.toUpperCase() || "H"}
-              </div>
+              </button>
             )}
 
             {/* Logout */}
