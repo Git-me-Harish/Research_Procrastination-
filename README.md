@@ -66,37 +66,120 @@ overcoming procrastination feel like a hero's journey.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    User's Browser                            │
-│  Next.js 16 Frontend (port 3000 in dev)                      │
-│  - Comic-style UI                                           │
-│  - Zustand state (auth, sound prefs)                        │
-│  - Web Audio API for sounds                                 │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-                 │ HTTP requests with ?XTransformPort=8001
-                 │ (Caddy gateway routes these to FastAPI)
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Caddy Gateway (port 81 in dev)                  │
-│  - Routes /  → Next.js (port 3000)                          │
-│  - Routes ?XTransformPort=N → port N                        │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        ▼                 ▼
-┌──────────────┐  ┌──────────────────────────────────────────┐
-│  Next.js     │  │  FastAPI Backend (port 8001)              │
-│  (port 3000) │  │  - SQLAlchemy ORM + SQLite                │
-│              │  │  - JWT Auth                               │
-│  - /api/ai   │  │  - Gamification engine                    │
-│    (AI       │  │  - Achievement evaluation                 │
-│     gateway  │  │  - Procrastination quiz scoring           │
-│     using    │  │  - XP/Level/Streak tracking               │
-│     z-ai-web │  │  - Calls /api/ai on Next.js for AI tasks  │
-│     -dev-sdk)│  │                                           │
-└──────────────┘  └──────────────────────────────────────────┘
+```mermaid
+flowchart LR
+
+%% ===========================
+%% User
+%% ===========================
+
+User([👤 User])
+
+%% ===========================
+%% Client Layer
+%% ===========================
+
+subgraph CLIENT["Client Application"]
+
+direction TB
+
+UI["🎨 Comic UI"]
+Dashboard["📊 Dashboard"]
+Tasks["✅ Task Manager"]
+Focus["⏱ Focus Timer"]
+Coach["🤖 AI Coach"]
+Profile["👤 Profile"]
+Mood["😊 Mood Tracker"]
+
+end
+
+%% ===========================
+%% Frontend
+%% ===========================
+
+subgraph FRONTEND["Next.js 16 Frontend"]
+
+direction TB
+
+Router["App Router"]
+Store["Zustand Store"]
+Gateway["API Gateway (/api)"]
+
+end
+
+%% ===========================
+%% Reverse Proxy
+%% ===========================
+
+Proxy["Caddy Reverse Proxy"]
+
+%% ===========================
+%% Backend
+%% ===========================
+
+subgraph BACKEND["FastAPI Backend"]
+
+direction TB
+
+API["REST API"]
+
+Auth["JWT Authentication"]
+Quiz["Quiz Engine"]
+AI["AI Service"]
+KPI["KPI Engine"]
+Game["Gamification"]
+Chain["Power Chains"]
+Shield["Streak Shields"]
+Breathe["BREATHE!"]
+ORM["SQLAlchemy ORM"]
+
+API --> Auth
+API --> Quiz
+API --> AI
+API --> KPI
+API --> Game
+API --> Chain
+API --> Shield
+API --> Breathe
+API --> ORM
+
+end
+
+%% ===========================
+%% Database
+%% ===========================
+
+Database[("SQLite / PostgreSQL")]
+
+%% ===========================
+%% AI Providers
+%% ===========================
+
+subgraph Providers["AI Providers"]
+
+direction TB
+
+Groq["Groq"]
+Gemini["Gemini"]
+
+end
+
+%% ===========================
+%% Main Flow
+%% ===========================
+
+User --> CLIENT
+
+CLIENT --> FRONTEND
+
+FRONTEND --> Proxy
+
+Proxy --> API
+
+ORM --> Database
+
+AI --> Groq
+AI --> Gemini
 ```
 
 ## Project Structure

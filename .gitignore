@@ -1,8 +1,7 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
 
-# dependencies
-node_modules
-/.pnp
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,45 +9,106 @@ node_modules
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# Next.js
+.next/
+out/
 
-# next.js
-/.next/
-/out/
+# Build
+build/
+dist/
 
-# production
-/build
+# Prisma
+prisma/*.db
+prisma/*.db-journal
 
-# misc
-.DS_Store
-*.pem
+# Local SQLite database
+db/*.db
+db/*.sqlite
+db/*.sqlite3
 
-# debug
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-local-*
-.claude
-.z-ai-config
-*.log
+pnpm-debug.log*
+server.log
 dev.log
 dev.out.log
-test
-prompt
 
-server.log
-# Skills directory
-/skills/
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Next
+next-env.d.ts
+*.tsbuildinfo
+
+# Vercel
+.vercel/
+
+
+# Claude / AI
+.claude/
+.z-ai-config/
+
+
+# Test Outputs
+coverage/
+tool-results/
+test-results/
+playwright-report/
+
+
+# Temporary
+*.pid
+server.pid
+*.tmp
+*.temp
+
+
+# Local folders
+prompt/
+test/
+skills/
+
+
+# Python Backend
+python-services/**/.env
+python-services/**/server.pid
+python-services/**/data/*.db
+python-services/**/data/*.sqlite
+python-services/**/data/*.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Runtime
+*.pid
+
+# Generated folders
+download/
+upload/
+tool-results/
