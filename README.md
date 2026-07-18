@@ -1,4 +1,4 @@
-# BAM! — Beat Avoidance Mode
+# BAM! : Beat Avoidance Mode
 
 > A comic-book-style anti-procrastination platform that helps students and professionals
 > beat avoidance, build focus habits, and track real progress over time. POW! BAM! ZAP!
